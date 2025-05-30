@@ -8,6 +8,8 @@ import argparse
 import os
 import sys
 
+TTS_ENGINE = None
+
 def server_mode(args):
 	while True:
 		try:
@@ -34,14 +36,16 @@ def current_env():
 	return os.path.basename(venv_path)
 
 def initiate(args):
-	tts_engine = None
 	if current_env() == "kokoro_env":
 		from kokoro_tts import KokoroTTSProcessor as TTSEngine
 	else:
 		from chatterbox_tts import ChatterboxTTSProcessor as TTSEngine
 
-	tts_engine = TTSEngine()
-	tts_engine.save_audio(args)
+	global TTS_ENGINE
+	if not TTS_ENGINE:
+		TTS_ENGINE = TTSEngine()
+
+	TTS_ENGINE.save_audio(args)
 
 
 def main():

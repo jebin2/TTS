@@ -42,7 +42,7 @@ class ChatterboxTTSProcessor(BaseTTS):
 		tokens = self.model.tokenizer.text_to_tokens(normalized)
 		return normalized, tokens.shape[1]
 
-	def split_text_by_tokens(self, text, max_tokens=500):
+	def split_text_by_tokens(self, text, max_tokens=200):
 		"""Split text into chunks based on token count.
 		
 		Args:

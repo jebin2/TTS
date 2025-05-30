@@ -12,15 +12,18 @@ class BaseTTS:
 		self.final_output_audio = "output_audio.wav"
 		self.final_output_timestamps = "output_timestamps.json"
 		self.temp_output_dir = Path("temp_audio_chunks")
-		self.default_voice_index = 5
+		self.default_voice_index = 8
 		self.default_speed = 0.8
 		self.voices = [
 			None,
 			'voices/Main-4.wav',
 			'voices/Ellen-TTS-10.wav',
 			'voices/kratos(ambient)_en.wav',
-			'voices/20250329-audio-american-female.wav',
-			'voices/20250329-audio-american-male.wav'
+			'voices/20250329-audio-american-male.wav',
+			'voices/Ellen13y TTS-14.wav',
+			'voices/Simple guy.wav',
+			None,
+			'voices/bbc_news.wav',
 		]
 		self.type = type
 
@@ -29,8 +32,10 @@ class BaseTTS:
 		try:
 			if self.temp_output_dir.exists():
 				shutil.rmtree(self.temp_output_dir)
-			os.remove(self.final_output_audio)
-			os.remove(self.final_output_timestamps)
+			if os.path.exists(self.final_output_audio):
+				os.remove(self.final_output_audio)
+			if os.path.exists(self.final_output_timestamps):
+				os.remove(self.final_output_timestamps)
 			print("Temporary files cleaned up")
 		except Exception as e:
 			print(f"Warning: Could not clean up temporary files: {e}")
@@ -51,23 +56,25 @@ class BaseTTS:
 	def validate_voice_index(self, args) -> str:
 		voice_index = self.default_voice_index
 		try:
-			voice_index = getattr(args, 'speed')
+			voice_index = int(getattr(args, 'voice'))
 			if not 0 <= voice_index < len(self.voices):
 				print(f"Invalid voice index {voice_index}, using default voice")
 				voice_index = self.default_voice_index
 		except: voice_index = self.default_voice_index
 
+		print(f"Speed Value: {self.voices[voice_index]}")
 		return self.voices[voice_index]
 
 	def validate_speed(self, args) -> float:
 		speed_value = self.default_speed
 		try:
-			speed_value = getattr(args, 'voice')
+			speed_value = float(getattr(args, 'speed'))
 			if speed_value <= 0:
 				print(f"Invalid speed {speed_value}, using default speed")
 				speed_value = self.default_speed
 		except: speed_value = self.default_speed
 
+		print(f"Speed Value: {speed_value}")
 		return speed_value
 
 	def combine_audio_files(self, audio_files):
