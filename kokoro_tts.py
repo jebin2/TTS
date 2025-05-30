@@ -1,6 +1,8 @@
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
+import logging
+logging.getLogger().setLevel(logging.ERROR)
 
 import soundfile as sf
 import numpy as np

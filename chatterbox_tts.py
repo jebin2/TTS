@@ -1,3 +1,9 @@
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+import logging
+logging.getLogger().setLevel(logging.ERROR)
+
 import sys
 import argparse
 import shutil
@@ -8,12 +14,6 @@ import spacy
 from pydub import AudioSegment
 from chatterbox.tts import ChatterboxTTS
 import torchaudio as ta
-
-import logging
-logging.getLogger().setLevel(logging.ERROR)
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
-
 
 # Constants
 CONTENT_FILE = Path("content.txt")
