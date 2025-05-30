@@ -4,3 +4,4 @@ chatterbox_env
 temp_audio_chunks
 output_audio.wav
 output_timestamps.json
+content.txt
