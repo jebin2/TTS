@@ -2,3 +2,5 @@ __pycache__
 kokoro_env
 chatterbox_env
 temp_audio_chunks
+output_audio.wav
+output_timestamps.json
