@@ -2,9 +2,9 @@ import soundfile as sf
 import json
 from typing import List
 from pathlib import Path
-from functools import reduce
+from base_tts import BaseTTS
 
-class KokoroTTSProcessor:
+class KokoroTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using KokoroTTS."""
 
 	def __init__(self):
@@ -40,9 +40,8 @@ class KokoroTTSProcessor:
 		)
 		audio_files = []
 		word_timestamps = []
-		total_chunks = len(generator)
 		
-		print(f"Processing {total_chunks} text chunks...")
+		print(f"Processing text chunks...")
 
 		for i, result in enumerate(generator):
 			tokens = result.tokens
@@ -60,12 +59,12 @@ class KokoroTTSProcessor:
 
 			chunk_file = self.generate_chunk_audio_file(audio, i)
 			audio_files.append(chunk_file)
-			print(f"Chunk {i + 1}/{total_chunks} processed -> {chunk_file.name} -> {chunk}")
+			print(f"Chunk {i + 1} processed -> {chunk_file.name} -> {chunk}")
 
 		# Save timestamps to a JSON file
-		with open('output_timestamps.json', 'w') as f:
+		with open(self.final_output_timestamps, 'w') as f:
 			json.dump(word_timestamps, f, indent=4)
 
-		print('Timestamps saved as output_timestamps.json')
+		print(f'Timestamps saved as {self.final_output_timestamps}')
 		
 		return audio_files
