@@ -1,0 +1,5 @@
+chatterbox-tts
+spacy
+pydub
+peft
+#python -m spacy download en_core_web_sm
