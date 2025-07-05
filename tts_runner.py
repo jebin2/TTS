@@ -9,6 +9,8 @@ import os
 import sys
 
 TTS_ENGINE = None
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+# os.environ['HF_HOME'] = os.path.abspath(os.path.realpath(os.path.join(os.path.dirname(__file__), './hf_download')))
 
 def server_mode(args):
 	while True:
@@ -32,8 +34,11 @@ def server_mode(args):
 			break
 
 def current_env():
+	"""Detect current virtual environment."""
 	venv_path = os.environ.get("VIRTUAL_ENV")
-	return os.path.basename(venv_path)
+	if venv_path:
+		return os.path.basename(venv_path)
+	raise ValueError("Please set env first")
 
 def initiate(args):
 	if current_env() == "kokoro_env":
