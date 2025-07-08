@@ -10,7 +10,6 @@ import sys
 
 TTS_ENGINE = None
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-# os.environ['HF_HOME'] = os.path.abspath(os.path.realpath(os.path.join(os.path.dirname(__file__), './hf_download')))
 
 def server_mode(args):
 	while True:
