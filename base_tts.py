@@ -29,16 +29,13 @@ class BaseTTS:
 
 	def cleanup_temp_files(self):
 		"""Clean up temporary audio files."""
-		try:
-			if self.temp_output_dir.exists():
-				shutil.rmtree(self.temp_output_dir)
-			if os.path.exists(self.final_output_audio):
-				os.remove(self.final_output_audio)
-			if os.path.exists(self.final_output_timestamps):
-				os.remove(self.final_output_timestamps)
-			print("Temporary files cleaned up")
-		except Exception as e:
-			print(f"Warning: Could not clean up temporary files: {e}")
+		if self.temp_output_dir.exists():
+			shutil.rmtree(self.temp_output_dir)
+		if os.path.exists(self.final_output_audio):
+			os.remove(self.final_output_audio)
+		if os.path.exists(self.final_output_timestamps):
+			os.remove(self.final_output_timestamps)
+		print("Temporary files cleaned up")
 
 	def setup_output_directory(self):
 		"""Create clean output directory for audio chunks."""
@@ -47,11 +44,8 @@ class BaseTTS:
 		self.temp_output_dir.mkdir(exist_ok=True)
 
 	def read_content_file(self):
-		try:
-			with open(self.content_file, 'r', encoding='utf-8') as file:
-				return file.read().strip()
-		except FileNotFoundError:
-			raise FileNotFoundError(f"Content file not found: {self.content_file}")
+		with open(self.content_file, 'r', encoding='utf-8') as file:
+			return file.read().strip()
 
 	def validate_voice_index(self, args) -> str:
 		voice_index = self.default_voice_index
@@ -87,25 +81,19 @@ class BaseTTS:
 			True if successful, False otherwise
 		"""
 		if not audio_files:
-			print("No audio files to combine")
-			return False
-			
-		try:
-			print(f"Combining {len(audio_files)} audio files...")
-			combined = reduce(
-				lambda acc, file_name: acc + AudioSegment.from_wav(file_name),
-				audio_files,
-				AudioSegment.empty()
-			)
-			
-			# Export combined audio
-			combined.export(self.final_output_audio, format="wav")
-			print(f"Combined audio saved as {self.final_output_audio}")
-			return True
-			
-		except Exception as e:
-			print(f"Error combining audio files: {e}")
-			return False
+			raise ValueError("No audio files to combine")
+
+		print(f"Combining {len(audio_files)} audio files...")
+		combined = reduce(
+			lambda acc, file_name: acc + AudioSegment.from_wav(file_name),
+			audio_files,
+			AudioSegment.empty()
+		)
+		
+		# Export combined audio
+		combined.export(self.final_output_audio, format="wav")
+		print(f"Combined audio saved as {self.final_output_audio}")
+		return True
 
 	def save_audio(self, args) -> bool:
 		"""Generate and save complete audio file.
@@ -118,34 +106,27 @@ class BaseTTS:
 		Returns:
 			True if successful, False otherwise
 		"""
-		try:
-			# Read content
-			text = self.read_content_file()
-			if not text:
-				print("Warning: Content file is empty")
-				return False
+		# Read content
+		text = self.read_content_file()
+		if not text:
+			raise ValueError("Warning: Content file is empty")
 
-			speed = self.validate_speed(args)
-			voice = self.validate_voice_index(args)
-			
-			# Clean up temporary files if requested
-			self.cleanup_temp_files()
-			
-			# Setup output directory
-			self.setup_output_directory()
-			
-			# Generate audio files
-			audio_files = self.generate_audio_files(text, voice, speed)
-			
-			if not audio_files:
-				print("Error: No audio files generated")
-				return False
-			
-			# Combine audio files
-			success = self.combine_audio_files(audio_files)
-			
-			return success
-			
-		except Exception as e:
-			print(f"Error in save_audio: {e} {traceback.format_exc()}")
-			return False
+		speed = self.validate_speed(args)
+		voice = self.validate_voice_index(args)
+		
+		# Clean up temporary files
+		self.cleanup_temp_files()
+		
+		# Setup output directory
+		self.setup_output_directory()
+		
+		# Generate audio files
+		audio_files = self.generate_audio_files(text, voice, speed)
+		
+		if not audio_files:
+			raise ValueError("Error: No audio files generated")
+
+		# Combine audio files
+		success = self.combine_audio_files(audio_files)
+		
+		return success

@@ -14,24 +14,19 @@ os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 def server_mode(args):
 	while True:
-		try:
-			input = sys.stdin.readline().strip()
-			input = input.split("voice")
+		input = sys.stdin.readline().strip()
+		input = input.split("voice")
 
-			try: args.speed = float(input[0])
-			except: args.speed = 1
+		try: args.speed = float(input[0])
+		except: args.speed = 1
 
-			try: args.voice = int(input[1])
-			except: args.voice = 8
+		try: args.voice = int(input[1])
+		except: args.voice = 8
 
-			output_path = initiate(args)
+		output_path = initiate(args)
 
-			print(output_path)
-			sys.stdout.flush()
-
-		except Exception as e:
-			print(f"Error in server mode: {e}")
-			break
+		print(output_path)
+		sys.stdout.flush()
 
 def current_env():
 	"""Detect current virtual environment."""

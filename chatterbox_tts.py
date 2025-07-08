@@ -3,12 +3,15 @@ from typing import List
 import spacy
 import torchaudio as ta
 from base_tts import BaseTTS
+import os
 
 class ChatterboxTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using ChatterboxTTS."""
 	
 	def __init__(self):
 		super().__init__("Chatterbox")
+		os.environ["TORCH_USE_CUDA_DSA"] = "1"
+		os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 		print("Initializing Chatterbox...")
 		from chatterbox.tts import ChatterboxTTS
 		print("Loading Modal...")
