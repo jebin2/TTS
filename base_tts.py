@@ -8,6 +8,9 @@ from functools import reduce
 
 class BaseTTS:
 	def __init__(self, type):
+		os.environ["TORCH_USE_CUDA_DSA"] = "1"
+		os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+		os.environ["HF_HUB_TIMEOUT"] = "120"
 		self.content_file = Path("content.txt")
 		self.final_output_audio = "output_audio.wav"
 		self.final_output_timestamps = "output_timestamps.json"
@@ -24,6 +27,8 @@ class BaseTTS:
 			'voices/Simple guy.wav',
 			None,
 			'voices/bbc_news.wav',
+			'voices/en_woman.wav',
+			'voices/voice_preview_david castlemore - newsreader and educator.mp3',
 		]
 		self.type = type
 

@@ -10,8 +10,6 @@ class ChatterboxTTSProcessor(BaseTTS):
 	
 	def __init__(self):
 		super().__init__("Chatterbox")
-		os.environ["TORCH_USE_CUDA_DSA"] = "1"
-		os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 		print("Initializing Chatterbox...")
 		from chatterbox.tts import ChatterboxTTS
 		print("Loading Modal...")
