@@ -3,7 +3,7 @@ from typing import List
 import spacy
 import torchaudio as ta
 from base_tts import BaseTTS
-import os
+import torch
 
 class ChatterboxTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using ChatterboxTTS."""
@@ -39,9 +39,16 @@ class ChatterboxTTSProcessor(BaseTTS):
 			Tuple of (normalized_text, token_count)
 		"""
 		from chatterbox.tts import punc_norm
-		normalized = punc_norm(text)
-		tokens = self.model.tokenizer.text_to_tokens(normalized)
-		return normalized, tokens.shape[1]
+		with torch.inference_mode():
+			normalized = punc_norm(text)
+			tokens = self.model.tokenizer.text_to_tokens(normalized)
+			token_count = tokens.shape[1]
+
+			# Clear tokens from GPU memory immediately
+			if hasattr(tokens, 'cpu'):
+				tokens = tokens.cpu()
+			del tokens
+			return normalized, token_count
 
 	def split_text_by_tokens(self, text, max_tokens=200):
 		"""Split text into chunks based on token count.
@@ -113,6 +120,7 @@ class ChatterboxTTSProcessor(BaseTTS):
 		# Save chunk to numbered file
 		chunk_file = self.temp_output_dir / f"chunk_{chunk_index:04d}.wav"
 		ta.save(str(chunk_file), wav, self.model.sr)
+		del wav
 		
 		return chunk_file
 
@@ -122,10 +130,10 @@ class ChatterboxTTSProcessor(BaseTTS):
 		total_chunks = len(chunks)
 		
 		print(f"Processing {total_chunks} text chunks...")
-		
-		for i, chunk in enumerate(chunks):
-			chunk_file = self.generate_chunk_audio_file(chunk, i, voicepack, speed)
-			audio_files.append(chunk_file)
-			print(f"Chunk {i + 1}/{total_chunks} processed -> {chunk_file.name} -> {chunk}")
+		with torch.inference_mode():
+			for i, chunk in enumerate(chunks):
+				chunk_file = self.generate_chunk_audio_file(chunk, i, voicepack, speed)
+				audio_files.append(chunk_file)
+				print(f"Chunk {i + 1}/{total_chunks} processed -> {chunk_file.name} -> {chunk}")
 				
 		return audio_files
