@@ -5,6 +5,11 @@ from pydub import AudioSegment
 import os
 import traceback
 from functools import reduce
+import threading
+import queue
+import time
+import signal
+import sys
 
 class BaseTTS:
 	def __init__(self, type):
@@ -31,6 +36,20 @@ class BaseTTS:
 			'voices/voice_preview_david castlemore - newsreader and educator.mp3',
 		]
 		self.type = type
+		self.save_audio_file = True
+		self.stream_audio = True
+		
+		# Streaming setup
+		self.audio_queue = queue.Queue()
+		self.is_streaming = False
+		self.stream_thread = None
+		self.sample_rate = 24000  # Default, can be overridden by subclasses
+		
+		# Emergency stop flag
+		self.emergency_stop = False
+		
+		# Setup signal handler for Ctrl+C
+		self.setup_signal_handler()
 
 	def cleanup_temp_files(self):
 		"""Clean up temporary audio files."""
@@ -100,13 +119,137 @@ class BaseTTS:
 		print(f"Combined audio saved as {self.final_output_audio}")
 		return True
 
+	# ===== EMERGENCY STOP METHODS =====
+	
+	def setup_signal_handler(self):
+		"""Setup signal handler for Ctrl+C to stop everything immediately."""
+		signal.signal(signal.SIGINT, self.emergency_stop_handler)
+		signal.signal(signal.SIGTERM, self.emergency_stop_handler)
+
+	def emergency_stop_handler(self, signum, frame):
+		"""Handle Ctrl+C - stop everything immediately."""
+		print("\n🛑 Emergency stop triggered! Stopping all operations...")
+		self.emergency_stop = True
+		
+		# Stop audio playback immediately
+		try:
+			sd.stop()
+		except:
+			pass
+		
+		# Stop streaming
+		self.force_stop_streaming()
+		
+		# Cleanup
+		try:
+			self.cleanup_temp_files()
+		except:
+			pass
+		
+		print("✅ Emergency stop completed. Exiting...")
+		sys.exit(0)
+
+	def force_stop_streaming(self):
+		"""Force stop streaming immediately without waiting."""
+		if self.is_streaming:
+			self.is_streaming = False
+			
+			# Clear the queue
+			try:
+				while not self.audio_queue.empty():
+					self.audio_queue.get_nowait()
+			except:
+				pass
+			
+			# Send poison pill
+			try:
+				self.audio_queue.put(None)
+			except:
+				pass
+			
+			print("🔇 Audio streaming force stopped")
+
+	def check_emergency_stop(self):
+		"""Check if emergency stop was triggered. Call this in loops."""
+		if self.emergency_stop:
+			raise KeyboardInterrupt("Emergency stop triggered")
+
+	# ===== STREAMING METHODS =====
+	
+	def _audio_stream_worker(self):
+		"""Worker thread that plays audio chunks as they arrive."""
+		while self.is_streaming and not self.emergency_stop:
+			try:
+				audio_data = self.audio_queue.get(timeout=0.1)
+				if audio_data is None or self.emergency_stop:  # Poison pill or emergency stop
+					break
+				
+				# Play audio chunk
+				sd.play(audio_data, samplerate=self.sample_rate)
+				
+				# Check for emergency stop while playing
+				while sd.get_stream().active and not self.emergency_stop:
+					time.sleep(0.01)
+				
+				if self.emergency_stop:
+					sd.stop()
+					break
+				
+			except queue.Empty:
+				continue
+			except Exception as e:
+				if not self.emergency_stop:
+					print(f"Audio playback error: {e}")
+				break
+
+	def start_streaming(self):
+		"""Start the audio streaming thread."""
+		try:
+			import sounddevice as sd
+			if not self.is_streaming and not self.emergency_stop:
+				self.is_streaming = True
+				self.stream_thread = threading.Thread(target=self._audio_stream_worker)
+				self.stream_thread.daemon = True
+				self.stream_thread.start()
+				print("🔊 Audio streaming started")
+		except:
+			self.stream_audio = False
+			print("🔇 No sounddevice.")
+			pass
+
+	def stop_streaming(self):
+		"""Stop the audio streaming thread."""
+		if self.is_streaming:
+			self.is_streaming = False
+			self.audio_queue.put(None)  # Poison pill
+			if self.stream_thread:
+				self.stream_thread.join(timeout=2)  # Don't wait forever
+			print("🔇 Audio streaming stopped")
+
+	def queue_audio_for_streaming(self, audio_data):
+		"""Queue audio data for streaming playback."""
+		if self.is_streaming and not self.emergency_stop:
+			self.audio_queue.put(audio_data)
+
+	def wait_for_streaming_complete(self):
+		"""Wait for all queued audio to finish playing."""
+		time.sleep(0.5)  # Small delay to ensure last chunk starts
+		while not self.audio_queue.empty() and not self.emergency_stop:
+			time.sleep(0.1)
+
+	# ===== ABSTRACT METHODS =====
+	
+	def generate_audio_files(self, text: str, voice: str, speed: float):
+		"""Generate audio files. To be implemented by subclasses."""
+		raise NotImplementedError("Subclasses must implement generate_audio_files")
+
+	# ===== MAIN METHODS =====
+
 	def save_audio(self, args) -> bool:
 		"""Generate and save complete audio file.
 		
 		Args:
-			voice: Voice name to use
-			speed: Speech speed
-			cleanup: Whether to clean up temporary files after combining
+			args: Arguments containing voice, speed, etc.
 			
 		Returns:
 			True if successful, False otherwise
@@ -125,7 +268,10 @@ class BaseTTS:
 		# Setup output directory
 		self.setup_output_directory()
 		
-		# Generate audio files
+		# Generate audio files (with optional streaming)
+		if self.stream_audio:
+			self.start_streaming()
+
 		audio_files = self.generate_audio_files(text, voice, speed)
 		
 		if not audio_files:
@@ -133,5 +279,8 @@ class BaseTTS:
 
 		# Combine audio files
 		success = self.combine_audio_files(audio_files)
-		
+
+		self.wait_for_streaming_complete()
+		self.stop_streaming()
+	
 		return success
