@@ -12,7 +12,7 @@ import signal
 import sys
 
 class BaseTTS:
-	def __init__(self, type):
+	def __init__(self, type, stream_audio=False):
 		"""Initialize BaseTTS with environment settings and configuration."""
 		# Environment setup
 		os.environ["TORCH_USE_CUDA_DSA"] = "1"
@@ -45,7 +45,7 @@ class BaseTTS:
 		# General settings
 		self.type = type
 		self.save_audio_file = True
-		self.stream_audio = True
+		self.stream_audio = stream_audio
 		
 		# Audio streaming configuration
 		self.audio_queue = queue.Queue()
