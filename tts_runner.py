@@ -7,6 +7,7 @@ logging.getLogger().setLevel(logging.ERROR)
 import argparse
 import os
 import sys
+import time
 
 TTS_ENGINE = None
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
@@ -46,7 +47,16 @@ def initiate(args):
     if not TTS_ENGINE:
         TTS_ENGINE = TTSEngine()
 
-    TTS_ENGINE.save_audio(args)
+    if args.stream_text:
+        TTS_ENGINE.stream_real_time_text(args)
+        text = TTS_ENGINE.read_content_file()
+        for text_chunk in text.split():
+            TTS_ENGINE.feed_text_chunk(text_chunk)
+            time.sleep(0.1)  # Optional delay
+
+        TTS_ENGINE.stop_all_streaming()
+    else:
+        TTS_ENGINE.save_audio(args)
 
 
 def main():
@@ -69,6 +79,12 @@ def main():
         type=int,
         help=f"Voice index"
     )
+    parser.add_argument(
+        "--stream-text",
+        action="store_true",
+        help="Enable streaming text output"
+    )
+
 
     args = parser.parse_args()
 

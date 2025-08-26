@@ -19,40 +19,23 @@ class KittenTTSProcessor(BaseTTS):
 		# Set sample rate for streaming
 		self.sample_rate = 24000
 
-	def split_sentences(self, text, max_chars=300):
-		words = text.split()
-		chunks = []
-		current = ""
-		
-		for word in words:
-			if len(current + " " + word) <= max_chars:
-				current += " " + word if current else word
-			else:
-				if current:
-					chunks.append(current)
-				current = word
-		
-		if current:
-			chunks.append(current)
-		
-		return chunks
-
 	def generate_chunk_audio_file(self, audio, chunk_index) -> Path:
 		chunk_file = self.temp_output_dir / f"chunk_{chunk_index:04d}.wav"
 		sf.write(chunk_file, audio, 24000)
 		return chunk_file
 
-	def generate_audio_files(self, text: str, voicepack: str, speed: float) -> List[Path]:
+	def generate_audio_files(self, text: str, voice: str, speed: float, chunk_id: int = None):
 		"""Original method for file generation (non-streaming)."""
 		sentences = self.split_sentences(text)
+		print(sentences)
 		audio_files = []
 
 		for i, sentence in enumerate(sentences):
-			audio = self.pipeline.generate(sentence, voice=voicepack)
+			audio = self.pipeline.generate(sentence, voice=voice)
 			if self.stream_audio:
 				self.queue_audio_for_streaming(audio)
 			if self.save_audio_file:
-				chunk_file = self.generate_chunk_audio_file(audio, i)
+				chunk_file = self.generate_chunk_audio_file(audio, chunk_id if chunk_id else i)
 				audio_files.append(chunk_file)
 			print(f"Chunk {i + 1} processed -> {chunk_file.name} -> {sentence}")
 
