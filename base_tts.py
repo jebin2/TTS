@@ -171,6 +171,12 @@ class BaseTTS:
 		
 		return chunks
 
+	def generate_chunk_audio_file(self, audio, chunk_index) -> Path:
+		import soundfile as sf
+		chunk_file = self.temp_output_dir / f"chunk_{chunk_index:04d}.wav"
+		sf.write(chunk_file, audio, self.sample_rate)
+		return chunk_file
+
 	# ===== EMERGENCY STOP METHODS =====
 	
 	def setup_signal_handler(self):
@@ -301,10 +307,74 @@ class BaseTTS:
 				self.stream_thread.join(timeout=2)  # Don't wait forever
 			print("🔇 Audio streaming stopped")
 
-	def queue_audio_for_streaming(self, audio_data):
-		"""Queue audio data for streaming playback."""
+	def queue_audio_for_streaming(self, audio_data, sample_rate=None):
+		"""Queue audio data for streaming playback.
+		
+		Args:
+			audio_data: Audio data (numpy array, tensor, or file path)
+			sample_rate (int, optional): Sample rate of the audio data
+		"""
 		if self.is_streaming and not self.emergency_stop:
-			self.audio_queue.put(audio_data)
+			# Convert audio data to numpy array if needed
+			processed_audio = self._prepare_audio_for_streaming(audio_data, sample_rate)
+			if processed_audio is not None:
+				self.audio_queue.put(processed_audio)
+
+	def _prepare_audio_for_streaming(self, audio_data, sample_rate=None):
+		"""Prepare audio data for streaming by converting to numpy array.
+		
+		Args:
+			audio_data: Raw audio data (numpy array, tensor, or file path)
+			sample_rate (int, optional): Sample rate of the audio data
+			
+		Returns:
+			numpy.ndarray: Audio data ready for streaming
+		"""
+		import numpy as np
+		
+		try:
+			# If it's already a numpy array, just ensure it's float32
+			if isinstance(audio_data, np.ndarray):
+				# Ensure audio is in the right format for sounddevice
+				audio = audio_data.astype(np.float32)
+				# Ensure values are in [-1, 1] range
+				if audio.max() > 1.0 or audio.min() < -1.0:
+					audio = audio / np.max(np.abs(audio))
+				return audio
+			
+			# If it's a torch tensor, convert to numpy
+			elif hasattr(audio_data, 'cpu'):  # torch tensor
+				audio = audio_data.cpu().numpy().astype(np.float32)
+				# Ensure values are in [-1, 1] range
+				if audio.max() > 1.0 or audio.min() < -1.0:
+					audio = audio / np.max(np.abs(audio))
+				return audio
+			
+			# If it's a file path, load it
+			elif isinstance(audio_data, (str, Path)):
+				from scipy.io import wavfile
+				sr, audio = wavfile.read(str(audio_data))
+				# Convert to float32 and normalize
+				if audio.dtype == np.int16:
+					audio = audio.astype(np.float32) / 32768.0
+				elif audio.dtype == np.int32:
+					audio = audio.astype(np.float32) / 2147483648.0
+				else:
+					audio = audio.astype(np.float32)
+				
+				# Update sample rate if provided
+				if sample_rate is None:
+					self.sample_rate = sr
+				
+				return audio
+			
+			else:
+				print(f"⚠️ Unsupported audio data type: {type(audio_data)}")
+				return None
+				
+		except Exception as e:
+			print(f"❌ Error preparing audio for streaming: {e}")
+			return None
 
 	def wait_for_audio_streaming_complete(self):
 		"""Wait for all queued audio to finish playing."""

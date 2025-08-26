@@ -45,7 +45,7 @@ def initiate(args):
 
     global TTS_ENGINE
     if not TTS_ENGINE:
-        TTS_ENGINE = TTSEngine()
+        TTS_ENGINE = TTSEngine(stream_audio=args.stream_text)
 
     if args.stream_text:
         TTS_ENGINE.stream_real_time_text(args)

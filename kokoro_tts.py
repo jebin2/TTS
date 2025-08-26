@@ -1,4 +1,3 @@
-import soundfile as sf
 import json
 from typing import List
 from pathlib import Path
@@ -7,8 +6,8 @@ from base_tts import BaseTTS
 class KokoroTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using KokoroTTS."""
 
-	def __init__(self):
-		super().__init__("Kokoro")
+	def __init__(self, stream_audio=False):
+		super().__init__("Kokoro", stream_audio=stream_audio)
 		self.default_voice_index = 8
 		self.default_speed = 1
 		self.voices = [
@@ -23,33 +22,25 @@ class KokoroTTSProcessor(BaseTTS):
 		self.pipeline = KPipeline(lang_code='a')
 		print("Model loaded successfully")
 
-	def generate_chunk_audio_file(self, audio, chunk_index) -> Path:
-
-		# Save chunk to numbered file
-		chunk_file = self.temp_output_dir / f"chunk_{chunk_index:04d}.wav"
-		sf.write(chunk_file, audio, 24000)
-		
-		return chunk_file
-
-	def generate_audio_files(self, text: str, voicepack: str, speed: float) -> List[Path]:
+	def generate_audio_files(self, text: str, voice: str, speed: float, chunk_id: int = None):
 		generator = self.pipeline(
 			text,
-			voice=voicepack,
+			voice=voice,
 			speed=speed,
 			split_pattern=r'\n+'
 		)
 		audio_files = []
 		word_timestamps = []
 		
-		print(f"Processing text chunks...")
+		print(f"Processing text sentences...")
 
 		for i, result in enumerate(generator):
 			tokens = result.tokens
 			audio = result.audio
 
-			chunk = ""
+			sentence = ""
 			for word in tokens:
-				chunk += word.text
+				sentence += word.text
 				word_timestamps.append({
 					"word": word.text,
 					"phonemes": word.phonemes,
@@ -57,9 +48,12 @@ class KokoroTTSProcessor(BaseTTS):
 					"end_time": word.end_ts
 				})
 
-			chunk_file = self.generate_chunk_audio_file(audio, i)
-			audio_files.append(chunk_file)
-			print(f"Chunk {i + 1} processed -> {chunk_file.name} -> {chunk}")
+			if self.stream_audio:
+				self.queue_audio_for_streaming(audio)
+			if self.save_audio_file:
+				chunk_file = self.generate_chunk_audio_file(audio, chunk_id if chunk_id else i)
+				audio_files.append(chunk_file)
+			print(f"Sentence {i + 1} processed -> {chunk_file.name} -> {sentence}")
 
 		# Save timestamps to a JSON file
 		with open(self.final_output_timestamps, 'w') as f:

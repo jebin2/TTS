@@ -8,8 +8,8 @@ import torch
 class ChatterboxTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using ChatterboxTTS."""
 	
-	def __init__(self):
-		super().__init__("Chatterbox")
+	def __init__(self, stream_audio=False):
+		super().__init__("Chatterbox", stream_audio=stream_audio)
 		print("Initializing Chatterbox...")
 		from chatterbox.tts import ChatterboxTTS
 		print("Loading Modal...")
@@ -50,7 +50,7 @@ class ChatterboxTTSProcessor(BaseTTS):
 			del tokens
 			return normalized, token_count
 
-	def split_text_by_tokens(self, text, max_tokens=200):
+	def split_sentences(self, text, max_tokens=200):
 		"""Split text into chunks based on token count.
 		
 		Args:
@@ -110,30 +110,33 @@ class ChatterboxTTSProcessor(BaseTTS):
 			
 		return chunks
 
-	def generate_chunk_audio_file(self, chunk: str, chunk_index: int, voicepack: str, speed: float) -> Path:
+	def generate_chunk_audio_file(self, sentence: str, chunk_index: int, voice: str, speed: float) -> Path:
 		wav = self.model.generate(
-			chunk,
-			audio_prompt_path=voicepack,
+			sentence,
+			audio_prompt_path=voice,
 			temperature=speed
 		)
 		
-		# Save chunk to numbered file
+		# Save sentence to numbered file
 		chunk_file = self.temp_output_dir / f"chunk_{chunk_index:04d}.wav"
 		ta.save(str(chunk_file), wav, self.model.sr)
 		del wav
 		
+		if self.stream_audio:
+			self.queue_audio_for_streaming(str(chunk_file))
 		return chunk_file
 
-	def generate_audio_files(self, text: str, voicepack: str, speed: float) -> List[Path]:
-		chunks = self.split_text_by_tokens(text)
+	def generate_audio_files(self, text: str, voice: str, speed: float, chunk_id: int = None):
+		sentences = self.split_sentences(text)
 		audio_files = []
-		total_chunks = len(chunks)
+		total_sentences = len(sentences)
 		
-		print(f"Processing {total_chunks} text chunks...")
+		print(f"Processing {total_sentences} text sentences...")
 		with torch.inference_mode():
-			for i, chunk in enumerate(chunks):
-				chunk_file = self.generate_chunk_audio_file(chunk, i, voicepack, speed)
-				audio_files.append(chunk_file)
-				print(f"Chunk {i + 1}/{total_chunks} processed -> {chunk_file.name} -> {chunk}")
+			for i, sentence in enumerate(sentences):
+				if self.save_audio_file:
+					chunk_file = self.generate_chunk_audio_file(sentence, chunk_id if chunk_id else i, voice, speed)
+					audio_files.append(chunk_file)
+				print(f"Sentence {i + 1}/{total_sentences} processed -> {chunk_file.name} -> {sentence}")
 				
 		return audio_files
