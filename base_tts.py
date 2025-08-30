@@ -200,12 +200,6 @@ class BaseTTS:
 		self.force_stop_streaming()
 		self.force_stop_text_streaming()
 		
-		# Cleanup
-		try:
-			self.cleanup_temp_files()
-		except:
-			pass
-		
 		print("✅ Emergency stop completed. Exiting...")
 		sys.exit(0)
 

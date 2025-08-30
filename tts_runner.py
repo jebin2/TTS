@@ -38,7 +38,7 @@ def current_env():
 def initiate(args):
     if current_env() == "kokoro_env":
         from kokoro_tts import KokoroTTSProcessor as TTSEngine
-    elif current_env() == "kittentts-env":
+    elif current_env() == "kitten_env":
         from kitten_tts import KittenTTSProcessor as TTSEngine
     else:
         from chatterbox_tts import ChatterboxTTSProcessor as TTSEngine
@@ -46,6 +46,17 @@ def initiate(args):
     global TTS_ENGINE
     if not TTS_ENGINE:
         TTS_ENGINE = TTSEngine(stream_audio=args.stream_text)
+
+    try:
+        import torch
+        import gc
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+        gc.collect()
+        gc.collect()
+        time.sleep(1)
+        print("\n🧹 Cleared PyTorch CUDA cache")
+    except: pass
 
     if args.stream_text:
         TTS_ENGINE.stream_real_time_text(args)
