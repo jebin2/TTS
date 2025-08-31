@@ -10,10 +10,21 @@ import queue
 import time
 import signal
 import sys
+import common
+
+from dotenv import load_dotenv
+import os
+if os.path.exists(".env"):
+    print("Loaded load_dotenv")
+    load_dotenv()
 
 class BaseTTS:
 	def __init__(self, type, stream_audio=False):
 		"""Initialize BaseTTS with environment settings and configuration."""
+		if os.getenv("USE_CPU_IF_POSSIBLE", None):
+			self.device = "cpu"
+		else:
+			self.device = "cuda" if common.is_gpu_available() else "cpu"
 		# Environment setup
 		os.environ["TORCH_USE_CUDA_DSA"] = "1"
 		os.environ["CUDA_LAUNCH_BLOCKING"] = "1"

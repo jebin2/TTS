@@ -19,7 +19,7 @@ class KokoroTTSProcessor(BaseTTS):
 		print("Initialising Kokoro...")
 		from kokoro import KPipeline
 		print("Loading Modal...")
-		self.pipeline = KPipeline(lang_code='a')
+		self.pipeline = KPipeline(lang_code='a', device=self.device)
 		print("Model loaded successfully")
 
 	def generate_audio_files(self, text: str, voice: str, speed: float, chunk_id: int = None):

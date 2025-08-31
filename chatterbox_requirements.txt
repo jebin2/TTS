@@ -3,4 +3,5 @@ spacy
 pydub
 peft
 sounddevice
+python-dotenv
 #python -m spacy download en_core_web_sm

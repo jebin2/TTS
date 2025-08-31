@@ -13,7 +13,7 @@ class ChatterboxTTSProcessor(BaseTTS):
 		print("Initializing Chatterbox...")
 		from chatterbox.tts import ChatterboxTTS
 		print("Loading Modal...")
-		self.model = ChatterboxTTS.from_pretrained(device="cuda")
+		self.model = ChatterboxTTS.from_pretrained(device=self.device)
 		self.nlp = spacy.load("en_core_web_sm")
 		print("Model loaded successfully")
 
