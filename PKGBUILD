@@ -1,5 +1,5 @@
 pkgname=tts-tui
-pkgver=1.0.2
+pkgver=1.0.3
 pkgrel=1
 pkgdesc="Minimalistic Textual TTS Reader with Kokoro voice support (Textual UI)"
 arch=('any')
