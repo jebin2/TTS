@@ -168,20 +168,32 @@ class TTSReader(App):
         line_starts = self._line_starts(text)
         token_re = re.compile(r"[A-Za-z0-9]+(?:['_-][A-Za-z0-9]+)*")
         # Regex for word-like tokens (includes contractions)
-        for m in token_re.finditer(text):
+        # for m in token_re.finditer(text):
+        #     abs_start, abs_end = m.start(), m.end()
+        #     # Map absolute index -> (row, col)
+        #     row = bisect.bisect_right(line_starts, abs_start) - 1
+        #     start_col = abs_start - line_starts[row]
+        #     end_col = abs_end - line_starts[row]
+        #     spans.append(
+        #         {
+        #             "token": self._normalize_token(m.group()),
+        #             "row": row,
+        #             "start_col": start_col,
+        #             "end_col": end_col,
+        #         }
+        #     )
+        for m in re.finditer(r"\S+", text):
             abs_start, abs_end = m.start(), m.end()
-            # Map absolute index -> (row, col)
             row = bisect.bisect_right(line_starts, abs_start) - 1
             start_col = abs_start - line_starts[row]
             end_col = abs_end - line_starts[row]
-            spans.append(
-                {
-                    "token": self._normalize_token(m.group()),
-                    "row": row,
-                    "start_col": start_col,
-                    "end_col": end_col,
-                }
-            )
+            spans.append({
+                "token": self._normalize_token(m.group()),
+                "row": row,
+                "start_col": start_col,
+                "end_col": end_col,
+            })
+
         return spans
 
     # --- Playback + Highlight ---
