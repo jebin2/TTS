@@ -8,8 +8,8 @@ if [ ! -d "$USER_VENV" ]; then
     python -m venv "$USER_VENV"
     source "$USER_VENV/bin/activate"
     pip install --upgrade pip
-    pip install -r "$HOME/.config/tts_tui/kokoro_requirements.txt" 2>/dev/null
-    pip install -r "$HOME/.config/tts_tui/requirement_tui.txt" 2>/dev/null
+    pip install -r "/opt/tts-tui/kokoro_requirements.txt" 2>/dev/null
+    pip install -r "/opt/tts-tui/requirement_tui.txt" 2>/dev/null
     deactivate
 fi
 
