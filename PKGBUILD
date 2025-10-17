@@ -62,11 +62,11 @@ package() {
         install -Dm644 "$file" "${pkgdir}/${install_dir}/$file"
     done
 
-    echo "==> Updating Exec path in TTS.Desktop"
-    sed -i "s|^Exec=.*|Exec=${install_dir}/kokoro_env/bin/python ${install_dir}/tui.py|" TTS.Desktop
+    echo "==> Updating Exec path in TTS.desktop"
+    sed -i "s|^Exec=.*|Exec=${install_dir}/kokoro_env/bin/python ${install_dir}/tui.py|" TTS.desktop
 
     echo "==> Installing desktop entry to ${desktop_target}"
-    install -Dm644 TTS.Desktop "${pkgdir}/${desktop_target}"
+    install -Dm644 TTS.desktop "${pkgdir}/${desktop_target}"
 
     echo "==> Creating symlink for CLI access at /usr/bin/tts-tui"
     install -Dm755 /dev/stdin "${pkgdir}/usr/bin/tts-tui" <<EOF
