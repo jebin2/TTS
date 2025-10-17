@@ -10,6 +10,9 @@ makedepends=('pyenv')
 source=("https://github.com/jebin2/TTS/archive/refs/tags/v${pkgver}.tar.gz")
 sha256sums=('SKIP')  # replace later with actual checksum
 
+# Avoid stripping precompiled binaries in venv
+export STRIP_BINARIES=0
+
 install_dir="/opt/${pkgname}"
 desktop_target="/usr/share/applications/TTS.desktop"
 
@@ -33,7 +36,6 @@ build() {
 }
 
 package() {
-    export STRIP_BINARIES=0
     cd "${srcdir}/TTS-${pkgver}"
     echo "========================================"
     echo "==> PACKAGE STEP STARTED"
@@ -66,7 +68,11 @@ package() {
     echo "==> Virtual environment setup completed."
 
     echo "==> Updating Exec path in TTS.desktop"
-    sed -i "s|^Exec=.*|Exec=${install_dir}/kokoro_env/bin/python ${install_dir}/tui.py|" TTS.desktop
+    if [[ -f TTS.desktop ]]; then
+        sed -i "s|^Exec=.*|Exec=${install_dir}/kokoro_env/bin/python ${install_dir}/tui.py|" TTS.desktop
+    else
+        echo "WARNING: TTS.desktop not found!"
+    fi
 
     echo "==> Installing desktop entry to ${desktop_target}"
     install -Dm644 TTS.desktop "${pkgdir}/${desktop_target}"
