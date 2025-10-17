@@ -227,13 +227,15 @@ class TTSReader(App):
     def _highlight_loop(self):
         """
         Process queued word selections and highlight them for the duration
-        between start_time and end_time.
+        between the previous word's end_time and current word's end_time.
         """
+        prev_end_time = 0.0
         while not self._stop_highlighting.is_set():
             try:
                 item = self._word_queue.get(timeout=0.1)
                 if item is None:
                     break
+
                 row, start_col, end_col, start_time, end_time = (
                     item["row"],
                     item["start_col"],
@@ -241,16 +243,22 @@ class TTSReader(App):
                     item["start_time"],
                     item["end_time"],
                 )
-                # Apply selection from the main thread
+
+                # Apply selection in the main thread
                 self.call_from_thread(self._set_selection, row, start_col, end_col)
-                # Sleep for the duration of the word
-                duration = max(0.0, end_time - start_time)
+
+                # Duration = current_end_time - previous_end_time
+                duration = max(0.0, end_time - prev_end_time)
+                prev_end_time = end_time
+
                 time.sleep(duration)
+
             except queue.Empty:
                 continue
             except Exception as e:
                 self.call_from_thread(lambda: self.log_message(f"[red]Highlight error: {e}[/red]"))
                 break
+
 
     MATCH_WINDOW = 12  # tokens to look ahead for a match
     def _set_selection(self, row: int, start_col: int, end_col: int):
