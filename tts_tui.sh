@@ -30,16 +30,20 @@ fi
 
 echo "Using Python: $PYTHON_BIN"
 
-# === Create venv if missing ===
-if [ ! -d "$USER_VENV" ]; then
+# === Function to create venv ===
+create_venv() {
     echo "==> Creating venv at $USER_VENV (Python $PY_VERSION)"
+    rm -rf "$USER_VENV"   # remove old env if exists
     "$PYTHON_BIN" -m venv "$USER_VENV"
     source "$USER_VENV/bin/activate"
     pip install --upgrade pip setuptools wheel
     pip install -r "$REQUIREMENTS_KOKORO"
     pip install -r "$REQUIREMENTS_MAIN"
     deactivate
-fi
+}
+
+# === Create venv if missing ===
+[ ! -d "$USER_VENV" ] && create_venv
 
 # === Run app function ===
 run_app() {
@@ -56,12 +60,21 @@ EXIT_CODE=$?
 
 # === Auto repair if failed ===
 if [ $EXIT_CODE -ne 0 ]; then
-    echo "==> Dependency repair in progress..."
+    echo "==> Detected Python error, attempting dependency repair..."
     source "$USER_VENV/bin/activate"
     pip install --upgrade pip setuptools wheel
     pip install --force-reinstall -r "$REQUIREMENTS_KOKORO"
     pip install --force-reinstall -r "$REQUIREMENTS_MAIN"
     deactivate
+
     echo "==> Retrying launch..."
     run_app "$@"
+    EXIT_CODE=$?
+
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo "==> Launch still failing, removing venv and creating a fresh one..."
+        create_venv
+        echo "==> Retrying launch after fresh venv..."
+        run_app "$@"
+    fi
 fi

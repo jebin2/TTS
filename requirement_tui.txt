@@ -1,3 +1,2 @@
 textual
-textual[syntax]
 pyperclip
