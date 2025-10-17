@@ -64,6 +64,7 @@ package() {
     echo "==> Installing TUI requirements..."
     pip install -r "${pkgdir}/${install_dir}/requirement_tui.txt"
 
+    python -m spacy download en_core_web_sm
     deactivate
     echo "==> Virtual environment setup completed."
 
