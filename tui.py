@@ -16,6 +16,7 @@ import time
 import queue
 import re
 import bisect
+import string
 
 from kokoro_tts import KokoroTTSProcessor
 
@@ -168,32 +169,18 @@ class TTSReader(App):
         line_starts = self._line_starts(text)
         token_re = re.compile(r"[A-Za-z0-9]+(?:['_-][A-Za-z0-9]+)*")
         # Regex for word-like tokens (includes contractions)
-        # for m in token_re.finditer(text):
-        #     abs_start, abs_end = m.start(), m.end()
-        #     # Map absolute index -> (row, col)
-        #     row = bisect.bisect_right(line_starts, abs_start) - 1
-        #     start_col = abs_start - line_starts[row]
-        #     end_col = abs_end - line_starts[row]
-        #     spans.append(
-        #         {
-        #             "token": self._normalize_token(m.group()),
-        #             "row": row,
-        #             "start_col": start_col,
-        #             "end_col": end_col,
-        #         }
-        #     )
         for m in re.finditer(r"\S+", text):
             abs_start, abs_end = m.start(), m.end()
+            # Map absolute index -> (row, col)
             row = bisect.bisect_right(line_starts, abs_start) - 1
             start_col = abs_start - line_starts[row]
             end_col = abs_end - line_starts[row]
             spans.append({
-                "token": self._normalize_token(m.group()),
+                "token": m.group(),
                 "row": row,
                 "start_col": start_col,
                 "end_col": end_col,
             })
-
         return spans
 
     # --- Playback + Highlight ---
@@ -261,6 +248,8 @@ class TTSReader(App):
                 self.call_from_thread(self._set_selection, row, start_col, end_col)
 
                 # Duration = current_end_time - previous_end_time
+                if prev_end_time > end_time:
+                    prev_end_time = 0
                 duration = max(0.0, end_time - prev_end_time)
                 prev_end_time = end_time
 
@@ -289,14 +278,15 @@ class TTSReader(App):
     def _tts_playback_thread(self, text: str):
         try:
             # Match Kokoro's per-word callback to our text spans in order
-            def word_cb(word_datas):
-                for wd in word_datas:
-                    tts_word = self._normalize_token(str(wd.get("word", "")))
-                    if not tts_word:
+            def word_cb(word_datas, audio_duration):
+                self.log_message(word_datas)
+                for wd_index, wd in enumerate(word_datas):
+                    tts_word = wd.get("word", "")
+                    if not tts_word or not any(ch.isalnum() for ch in tts_word):
                         continue
 
                     start_index = self._word_span_pos
-                    end_index = min(start_index + self.MATCH_WINDOW, len(self._word_spans))
+                    end_index = min(start_index + 1, len(self._word_spans))
 
                     match_idx = None
                     # Bounded forward window
@@ -315,13 +305,24 @@ class TTSReader(App):
                     span = self._word_spans[match_idx]
                     self._word_span_pos = match_idx + 1
 
+                    start_time = wd.get("start_time", 0.0)
+                    end_time = wd.get("end_time", 0.0)
+                    if start_time == None and end_time == None:
+                        if wd_index + 1 == len(word_datas):
+                            start_time = word_datas[wd_index - 1]["end_time"]
+                            end_time = audio_duration
+                        else:
+                            start_time = word_datas[wd_index - 1]["end_time"]
+                            end_time = word_datas[wd_index + 1]["start_time"]
+
                     self._word_queue.put(
                         {
+                            "word": span["token"],
                             "row": span["row"],
                             "start_col": span["start_col"],
                             "end_col": span["end_col"],
-                            "start_time": float(wd.get("start_time", 0.0)),
-                            "end_time": float(wd.get("end_time", 0.0)),
+                            "start_time": float(start_time) if start_time is not None else 0.0,
+                            "end_time": float(end_time) if end_time is not None else 0.0,
                         }
                     )
 
