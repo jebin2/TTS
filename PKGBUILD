@@ -33,6 +33,7 @@ build() {
 }
 
 package() {
+    export STRIP_BINARIES=0
     cd "${srcdir}/TTS-${pkgver}"
     echo "========================================"
     echo "==> PACKAGE STEP STARTED"
