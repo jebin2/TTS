@@ -166,7 +166,7 @@ class TTSReader(App):
 
     BINDINGS = [
         Binding("ctrl+v", "paste", "Paste", show=True),
-        Binding("ctrl+p", "toggle_play", "Play/Pause", show=True),
+        Binding("ctrl+p", "toggle_play", "Play", show=True),
         Binding("ctrl+s", "stop_audio", "Stop", show=True),
         Binding("q", "quit", "Quit", show=True),
     ]
@@ -378,7 +378,7 @@ class TTSReader(App):
                 self.call_from_thread(self._set_selection, row, start_col, end_col)
 
                 if prev_end_time > end_time:
-                    prev_end_time = 0
+                    prev_end_time = -0.2 # add buffer when next audio plays
                 duration = max(0.0, end_time - prev_end_time)
                 prev_end_time = end_time
 
@@ -515,10 +515,7 @@ class TTSReader(App):
     def watch_is_playing(self, is_playing):
         self.update_controls()
         play_btn = self.query_one("#play", Button)
-        if is_playing:
-            play_btn.label = "Pause"
-        else:
-            play_btn.label = "Play"
+        play_btn.label = "Play"
 
     def update_controls(self):
         try:
