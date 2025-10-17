@@ -61,6 +61,8 @@ package() {
         echo "    -> Installing $file"
         install -Dm644 "$file" "${pkgdir}/${install_dir}/$file"
     done
+    install -dm755 "${pkgdir}/${install_dir}/kokoro_env"
+    cp -r "${srcdir}/TTS-${pkgver}/kokoro_env" "${pkgdir}/${install_dir}/"
 
     echo "==> Updating Exec path in TTS.desktop"
     sed -i "s|^Exec=.*|Exec=${install_dir}/kokoro_env/bin/python ${install_dir}/tui.py|" TTS.desktop
