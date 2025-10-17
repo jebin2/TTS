@@ -1,6 +1,10 @@
 #!/bin/bash
-# User-local venv path
+# ~/.local/bin/tts-tui or /usr/bin/tts-tui
+
 USER_VENV="$HOME/.config/tts_tui/kokoro_env"
+REQUIREMENTS_MAIN="/opt/tts-tui/requirement_tui.txt"
+REQUIREMENTS_KOKORO="/opt/tts-tui/kokoro_requirements.txt"
+APP_ENTRY="/opt/tts-tui/tui.py"
 
 # Create venv on first run
 if [ ! -d "$USER_VENV" ]; then
@@ -8,11 +12,33 @@ if [ ! -d "$USER_VENV" ]; then
     python -m venv "$USER_VENV"
     source "$USER_VENV/bin/activate"
     pip install --upgrade pip
-    pip install -r "/opt/tts-tui/kokoro_requirements.txt" 2>/dev/null
-    pip install -r "/opt/tts-tui/requirement_tui.txt" 2>/dev/null
+    pip install -r "$REQUIREMENTS_KOKORO"
+    pip install -r "$REQUIREMENTS_MAIN"
     deactivate
 fi
 
-# Activate venv and run TTS
-source "$USER_VENV/bin/activate"
-python "/opt/tts-tui/tui.py" "$@"
+# Function to run app safely
+run_app() {
+    source "$USER_VENV/bin/activate"
+    python "$APP_ENTRY" "$@"
+    local STATUS=$?
+    deactivate
+    return $STATUS
+}
+
+# Try running app
+run_app "$@"
+EXIT_CODE=$?
+
+# If it failed due to missing module, reinstall once and retry
+if [ $EXIT_CODE -ne 0 ]; then
+    echo "==> Detected Python error, attempting dependency repair..."
+    source "$USER_VENV/bin/activate"
+    pip install --upgrade pip
+    pip install -r --force-reinstall "$REQUIREMENTS_KOKORO"
+    pip install -r --force-reinstall "$REQUIREMENTS_MAIN"
+    deactivate
+
+    echo "==> Retrying launch..."
+    run_app "$@"
+fi
