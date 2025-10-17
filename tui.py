@@ -72,14 +72,16 @@ class TTSReader(App):
     is_playing = reactive(False)
     tts_ready = reactive(False)
 
-    def __init__(self):
+    def __init__(self, debug_mode=False):
         super().__init__()
+        self.debug_mode = debug_mode
         self.tts = None
         self.original_text = ""
         self._playback_worker = None
         self._highlight_worker = None
         self._word_queue = queue.Queue()
         self._stop_highlighting = threading.Event()
+        self._pending_play_after_ready = False
 
         # Token span map over the current TextArea buffer:
         # list of dicts: { "token": str, "row": int, "start_col": int, "end_col": int }
@@ -90,13 +92,14 @@ class TTSReader(App):
         with Vertical(id="main_container"):
             # Regular TextArea with soft wrap
             yield TextArea(
-                "", 
-                id="text_input", 
+                "",
+                id="text_input",
                 soft_wrap=True,      # enable wrapping
                 language="text"      # keep plain text syntax behaviors
             )
-        with Vertical(id="log_container"):
-            yield RichLog(id="log", wrap=True, markup=True, auto_scroll=True)
+        if self.debug_mode:
+            with Vertical(id="log_container"):
+                yield RichLog(id="log", wrap=True, markup=True, auto_scroll=True)
         with Horizontal(id="controls"):
             yield Button("Paste [Ctrl+V]", id="paste", variant="success")
             yield Button("Play [Ctrl+P]", id="play", variant="primary")
@@ -114,6 +117,14 @@ class TTSReader(App):
             self.tts = KokoroTTSProcessor(stream_audio=True, setup_signals=False)
             self.tts_ready = True
             self.call_from_thread(self.log_message, "[green]✓ TTS Ready[/green]")
+
+            # If user clicked play while loading, start playback automatically
+            if self._pending_play_after_ready:
+                self._pending_play_after_ready = False
+                self.call_from_thread(self.action_toggle_play)
+
+            # Update UI state (re-enable buttons)
+            self.call_from_thread(self.update_controls)
         except Exception as e:
             self.call_from_thread(self.log_message, f"[red]TTS Init Error: {e}[/red]")
 
@@ -128,10 +139,18 @@ class TTSReader(App):
             self.log_message(f"[red]Paste failed: {e}[/red]")
 
     def action_toggle_play(self):
+        play_btn = self.query_one("#play", Button)
+        stop_btn = self.query_one("#stop", Button)
         if self.is_playing:
             self.stop_audio()
         else:
-            self.play_audio()
+            if not self.tts_ready:
+                self.log_message("[yellow]TTS is still loading... will play automatically[/yellow]")
+                self._pending_play_after_ready = True
+                play_btn.disabled = True  # visually disable while loading
+                stop_btn.disabled = True
+            else:
+                self.play_audio()
 
     def action_stop_audio(self):
         self.stop_audio()
@@ -139,8 +158,8 @@ class TTSReader(App):
     def on_button_pressed(self, event: Button.Pressed):
         mapping = {
             "paste": self.action_paste,
-            "play": self.play_audio,
-            "stop": self.stop_audio,
+            "play": self.action_toggle_play, # <-- FIX: Changed to call the correct action
+            "stop": self.action_stop_audio,
         }
         action = mapping.get(event.button.id)
         if action:
@@ -328,9 +347,7 @@ class TTSReader(App):
 
             self.tts.word_callback = word_cb
             self.tts.start_audio_streaming()
-            voice = self.tts.voices[self.tts.default_voice_index]
-            speed = self.tts.default_speed
-            self.tts.generate_audio_files(text, voice, speed)
+            self.tts.generate_audio_files(text, self.tts.voices[2], self.tts.default_speed)
             self._word_queue.put(None)
             self.tts.wait_for_audio_streaming_complete()
             self.tts.stop_audio_streaming()
@@ -405,8 +422,9 @@ class TTSReader(App):
 
 
 def main():
-    TTSReader().run()
-
+    import sys
+    debug_mode = "--debug" in sys.argv
+    TTSReader(debug_mode=debug_mode).run()
 
 if __name__ == "__main__":
     main()
