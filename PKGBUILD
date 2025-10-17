@@ -1,5 +1,5 @@
 pkgname=tts-tui
-pkgver=1.0.3
+pkgver=1.0.2
 pkgrel=1
 pkgdesc="Minimalistic Textual TTS Reader with Kokoro voice support (Textual UI)"
 arch=('any')
@@ -28,22 +28,7 @@ build() {
     pyenv install -s 3.10.12
     pyenv local 3.10.12
     echo "==> Python version in use: $(python --version)"
-
-    echo "==> Creating virtual environment kokoro_env..."
-    python -m venv kokoro_env
-    source kokoro_env/bin/activate
-
-    echo "==> Upgrading pip..."
-    pip install --upgrade pip
-
-    echo "==> Installing kokoro requirements..."
-    pip install -r kokoro_requirements.txt
-
-    echo "==> Installing TUI requirements..."
-    pip install -r requirement_tui.txt
-
-    deactivate
-    echo "==> Virtual environment setup completed."
+    echo "==> Build step completed."
     echo "========================================"
 }
 
@@ -52,6 +37,7 @@ package() {
     echo "========================================"
     echo "==> PACKAGE STEP STARTED"
     echo "==> Current directory: $(pwd)"
+
     echo "==> Creating install directory: ${install_dir}"
     install -dm755 "${pkgdir}/${install_dir}"
 
@@ -61,8 +47,22 @@ package() {
         echo "    -> Installing $file"
         install -Dm644 "$file" "${pkgdir}/${install_dir}/$file"
     done
-    install -dm755 "${pkgdir}/${install_dir}/kokoro_env"
-    cp -r "${srcdir}/TTS-${pkgver}/kokoro_env" "${pkgdir}/${install_dir}/"
+
+    echo "==> Creating virtual environment directly in install path"
+    python -m venv "${pkgdir}/${install_dir}/kokoro_env"
+    source "${pkgdir}/${install_dir}/kokoro_env/bin/activate"
+
+    echo "==> Upgrading pip..."
+    pip install --upgrade pip
+
+    echo "==> Installing kokoro requirements..."
+    pip install -r "${pkgdir}/${install_dir}/kokoro_requirements.txt"
+
+    echo "==> Installing TUI requirements..."
+    pip install -r "${pkgdir}/${install_dir}/requirement_tui.txt"
+
+    deactivate
+    echo "==> Virtual environment setup completed."
 
     echo "==> Updating Exec path in TTS.desktop"
     sed -i "s|^Exec=.*|Exec=${install_dir}/kokoro_env/bin/python ${install_dir}/tui.py|" TTS.desktop
