@@ -4,8 +4,8 @@ Requires: textual, pyperclip, kokoro-tts
 Install: pip install textual pyperclip kokoro-tts
 """
 from textual.app import App, ComposeResult
-from textual.widgets import TextArea, Button, Footer, RichLog
-from textual.containers import Horizontal, Vertical
+from textual.widgets import TextArea, Button, Footer, RichLog, Static
+from textual.containers import Horizontal, Vertical, Container
 from textual.binding import Binding
 from textual.reactive import reactive
 from textual.widgets.text_area import Selection
@@ -16,57 +16,159 @@ import time
 import queue
 import re
 import bisect
-import string
 
 from kokoro_tts import KokoroTTSProcessor
+
+
+class StatusBar(Static):
+    """Custom status bar with TTS state"""
+    DEFAULT_CSS = """
+    StatusBar {
+        dock: top;
+        height: 1;
+        background: #1a1a2e;
+        color: #00ff9f;
+        padding: 0 2;
+        text-style: bold;
+    }
+    """
+    
+    status_text = reactive("Ready")
+    
+    def render(self) -> str:
+        return self.status_text
 
 
 class TTSReader(App):
     CSS = """
     Screen {
-        layout: vertical;
+        background: #0f0f23;
+    }
+
+    StatusBar {
+        border-bottom: heavy #00ff9f;
     }
 
     #main_container {
-        height: 3fr;
-        border: solid $primary;
-        padding: 1;
+        height: 1fr;
+        margin: 2 3;
+        padding: 0;
+    }
+
+    #text_panel {
+        height: 1fr;
+        background: #1a1a2e;
+        border: heavy #00d4ff;
+        padding: 2;
     }
 
     TextArea {
         height: 1fr;
-        border: solid $secondary;
+        background: #1a1a2e;
+        color: #e0e0e0;
+        border: none;
         padding: 1;
+        scrollbar-gutter: stable;
+        scrollbar-color: #00ff9f #1a1a2e;
+    }
+
+    TextArea:focus {
+        border: none;
+    }
+
+    TextArea > .text-area--cursor {
+        background: #ff00ff;
+        color: #1a1a2e;
+    }
+
+    TextArea > .text-area--selection {
+        background: #ff00ff 40%;
     }
 
     #log_container {
-        height: 2fr;
-        border: solid $accent;
-        padding: 1;
+        height: 12;
+        margin: 0 3 2 3;
+        padding: 0;
+    }
+
+    #log_panel {
+        height: 1fr;
+        background: #1a1a2e;
+        border: heavy #ff00ff;
+        padding: 1 2;
     }
 
     RichLog {
-        height: 100%;
-        overflow-y: auto;
+        height: 1fr;
+        background: transparent;
+        color: #00ff9f;
+        border: none;
+        padding: 0;
     }
 
     #controls {
-        height: 3;
+        height: auto;
         dock: bottom;
-        background: $surface;
-        padding: 0 1;
+        background: #0f0f23;
+        padding: 2 3 3 3;
+        align: center middle;
+    }
+
+    #button_row {
+        width: auto;
+        height: auto;
+        align: center middle;
     }
 
     Button {
+        min-width: 14;
+        height: 3;
         margin: 0 1;
+        border: heavy #00d4ff;
+        background: #1a1a2e;
+        color: #00d4ff;
+        text-style: bold;
+    }
+
+    Button:hover {
+        background: #00d4ff 20%;
+        color: #ffffff;
+        border: heavy #00ff9f;
+    }
+
+    Button:disabled {
+        opacity: 0.6;
+        border: heavy #00d4ff;
+        color: #00d4ff;
+    }
+
+    Footer {
+        background: #1a1a2e;
+        color: #00ff9f;
+        border-top: heavy #00d4ff;
+    }
+
+    Footer > .footer--highlight {
+        background: #ff00ff;
+        color: #ffffff;
+    }
+
+    Footer > .footer--key {
+        background: #00d4ff;
+        color: #0f0f23;
+    }
+
+    /* Smooth transitions */
+    Button {
+        transition: background 100ms, border 100ms, color 100ms;
     }
     """
 
     BINDINGS = [
-        Binding("ctrl+v", "paste", "Paste"),
-        Binding("ctrl+p", "toggle_play", "Play/Pause"),
-        Binding("ctrl+s", "stop_audio", "Stop"),
-        Binding("q", "quit", "Quit"),
+        Binding("ctrl+v", "paste", "Paste", show=True),
+        Binding("ctrl+p", "toggle_play", "Play/Pause", show=True),
+        Binding("ctrl+s", "stop_audio", "Stop", show=True),
+        Binding("q", "quit", "Quit", show=True),
     ]
 
     is_playing = reactive(False)
@@ -82,33 +184,40 @@ class TTSReader(App):
         self._word_queue = queue.Queue()
         self._stop_highlighting = threading.Event()
         self._pending_play_after_ready = False
-
-        # Token span map over the current TextArea buffer:
-        # list of dicts: { "token": str, "row": int, "start_col": int, "end_col": int }
         self._word_spans = []
-        self._word_span_pos = 0  # advancing pointer while matching TTS words to text spans
+        self._word_span_pos = 0
 
     def compose(self) -> ComposeResult:
+        yield StatusBar(id="status")
+        
         with Vertical(id="main_container"):
-            # Regular TextArea with soft wrap
-            yield TextArea(
-                "",
-                id="text_input",
-                soft_wrap=True,      # enable wrapping
-                language="text"      # keep plain text syntax behaviors
-            )
+            with Container(id="text_panel"):
+                yield TextArea(
+                    "",
+                    id="text_input",
+                    soft_wrap=True,
+                    language="text",
+                    theme="css"
+                )
+        
         if self.debug_mode:
             with Vertical(id="log_container"):
-                yield RichLog(id="log", wrap=True, markup=True, auto_scroll=True)
+                with Container(id="log_panel"):
+                    yield RichLog(id="log", wrap=True, markup=True, auto_scroll=True)
+        
         with Horizontal(id="controls"):
-            yield Button("Paste [Ctrl+V]", id="paste", variant="success")
-            yield Button("Play [Ctrl+P]", id="play", variant="primary")
-            yield Button("Stop [Ctrl+S]", id="stop", variant="error")
+            with Horizontal(id="button_row"):
+                yield Button("Paste", id="paste")
+                yield Button("Play", id="play")
+                yield Button("Stop", id="stop")
+                yield Button("Quit", id="quit") 
+        
         yield Footer()
 
     def on_mount(self):
+        self.update_status("▶ INITIALIZING...")
         self.update_controls()
-        self.log_message("[dim]Initializing TTS...[/dim]")
+        self.log_message("[dim]>>> Initializing TTS engine...[/dim]")
         self._init_tts()
 
     @work(thread=True)
@@ -116,17 +225,24 @@ class TTSReader(App):
         try:
             self.tts = KokoroTTSProcessor(stream_audio=True, setup_signals=False)
             self.tts_ready = True
-            self.call_from_thread(self.log_message, "[green]✓ TTS Ready[/green]")
+            self.call_from_thread(self.update_status, "Ready")
+            self.call_from_thread(self.log_message, "[green]>>> TTS engine initialized[/green]")
 
-            # If user clicked play while loading, start playback automatically
             if self._pending_play_after_ready:
                 self._pending_play_after_ready = False
                 self.call_from_thread(self.action_toggle_play)
 
-            # Update UI state (re-enable buttons)
             self.call_from_thread(self.update_controls)
         except Exception as e:
-            self.call_from_thread(self.log_message, f"[red]TTS Init Error: {e}[/red]")
+            self.call_from_thread(self.update_status, "Error")
+            self.call_from_thread(self.log_message, f"[red]>>> TTS initialization failed: {e}[/red]")
+
+    def update_status(self, text: str):
+        try:
+            status = self.query_one(StatusBar)
+            status.status_text = text
+        except Exception:
+            pass
 
     # --- Actions ---
     def action_paste(self):
@@ -134,32 +250,46 @@ class TTSReader(App):
             text = pyperclip.paste()
             if text:
                 self.query_one("#text_input", TextArea).text = text
-                self.log_message("[green]Text pasted successfully[/green]")
+                self.log_message("[green]>>> Text pasted from clipboard[/green]")
+                self.update_status("Text loaded")
         except Exception as e:
-            self.log_message(f"[red]Paste failed: {e}[/red]")
+            self.log_message(f"[red]>>> Paste failed: {e}[/red]")
 
     def action_toggle_play(self):
-        play_btn = self.query_one("#play", Button)
-        stop_btn = self.query_one("#stop", Button)
-        if self.is_playing:
-            self.stop_audio()
-        else:
-            if not self.tts_ready:
-                self.log_message("[yellow]TTS is still loading... will play automatically[/yellow]")
-                self._pending_play_after_ready = True
-                play_btn.disabled = True  # visually disable while loading
-                stop_btn.disabled = True
+        textarea = self.query_one("#text_input", TextArea)
+        text = textarea.text
+        if text.strip():
+            play_btn = self.query_one("#play", Button)
+            stop_btn = self.query_one("#stop", Button)
+            if self.is_playing:
+                self.stop_audio()
             else:
-                self.play_audio()
+                if not self.tts_ready:
+                    self.log_message("[cyan]>>> TTS loading... will auto-play[/cyan]")
+                    self.update_status("Loading...")
+                    self._pending_play_after_ready = True
+                    play_btn.disabled = True
+                    stop_btn.disabled = True
+                else:
+                    self.play_audio()
 
     def action_stop_audio(self):
         self.stop_audio()
 
+    def action_quit(self):
+        try:
+            self.update_status("Exiting...")
+        except Exception:
+            pass
+        self._ensure_tts_stopped()
+        self.exit()  # cleanly exits the Textual app
+
     def on_button_pressed(self, event: Button.Pressed):
         mapping = {
             "paste": self.action_paste,
-            "play": self.action_toggle_play, # <-- FIX: Changed to call the correct action
+            "play": self.action_toggle_play,
             "stop": self.action_stop_audio,
+            "quit": self.action_quit, 
         }
         action = mapping.get(event.button.id)
         if action:
@@ -168,7 +298,6 @@ class TTSReader(App):
     # --- Word span mapping ---
     @staticmethod
     def _normalize_token(s: str) -> str:
-        # Keep alnum and apostrophes (typical TTS tokenization), lowercase
         return re.sub(r"[^A-Za-z0-9']+", "", s).lower()
 
     @staticmethod
@@ -180,17 +309,10 @@ class TTSReader(App):
         return starts
 
     def _build_word_spans(self, text: str):
-        """
-        Build a sequential list of word-like token spans over the full document,
-        with precise (row, start_col, end_col) coordinates for each token.
-        """
         spans = []
         line_starts = self._line_starts(text)
-        token_re = re.compile(r"[A-Za-z0-9]+(?:['_-][A-Za-z0-9]+)*")
-        # Regex for word-like tokens (includes contractions)
         for m in re.finditer(r"\S+", text):
             abs_start, abs_end = m.start(), m.end()
-            # Map absolute index -> (row, col)
             row = bisect.bisect_right(line_starts, abs_start) - 1
             start_col = abs_start - line_starts[row]
             end_col = abs_end - line_starts[row]
@@ -205,36 +327,30 @@ class TTSReader(App):
     # --- Playback + Highlight ---
     def play_audio(self):
         if not self.tts_ready:
-            self.log_message("[yellow]TTS is still loading[/yellow]")
+            self.log_message("[cyan]>>> TTS is still loading[/cyan]")
             return
 
         textarea = self.query_one("#text_input", TextArea)
         text = textarea.text
         if not text.strip():
-            self.log_message("[yellow]No text to read[/yellow]")
+            self.log_message("[cyan]>>> No text to read[/cyan]")
             return
 
-        # Ensure clean state
         self._ensure_tts_stopped()
-
-        # Precompute word spans for the current text
         self._word_spans = self._build_word_spans(text)
         self._word_span_pos = 0
-
         self.is_playing = True
         self._stop_highlighting.clear()
 
-        # Drain any stale queue items
         while not self._word_queue.empty():
             try:
                 self._word_queue.get_nowait()
             except queue.Empty:
                 break
 
-        # Ensure the TextArea has focus so the selection is visible
         textarea.focus()
+        self.update_status("Playing...")
 
-        # Start workers
         self._highlight_worker = threading.Thread(target=self._highlight_loop, daemon=True)
         self._highlight_worker.start()
 
@@ -244,10 +360,6 @@ class TTSReader(App):
         self._playback_worker.start()
 
     def _highlight_loop(self):
-        """
-        Process queued word selections and highlight them for the duration
-        between the previous word's end_time and current word's end_time.
-        """
         prev_end_time = 0.0
         while not self._stop_highlighting.is_set():
             try:
@@ -263,10 +375,8 @@ class TTSReader(App):
                     item["end_time"],
                 )
 
-                # Apply selection in the main thread
                 self.call_from_thread(self._set_selection, row, start_col, end_col)
 
-                # Duration = current_end_time - previous_end_time
                 if prev_end_time > end_time:
                     prev_end_time = 0
                 duration = max(0.0, end_time - prev_end_time)
@@ -277,26 +387,22 @@ class TTSReader(App):
             except queue.Empty:
                 continue
             except Exception as e:
-                self.call_from_thread(lambda: self.log_message(f"[red]Highlight error: {e}[/red]"))
+                self.call_from_thread(lambda: self.log_message(f"[red]>>> Highlight error: {e}[/red]"))
                 break
 
+    MATCH_WINDOW = 12
 
-    MATCH_WINDOW = 12  # tokens to look ahead for a match
     def _set_selection(self, row: int, start_col: int, end_col: int):
         try:
             textarea = self.query_one("#text_input", TextArea)
-            # Move caret to end of selection (Textual uses Selection.end as caret)
             textarea.selection = Selection(start=(row, start_col), end=(row, end_col))
-            # Ensure caret is visible across versions
             textarea.focus()
-            # Scroll the line into view (immediate to avoid animation lag)
             textarea.scroll_to(y=row, immediate=True)
         except Exception as e:
-            self.log_message(f"[red]Selection error: {e}[/red]")
+            self.log_message(f"[red]>>> Selection error: {e}[/red]")
 
     def _tts_playback_thread(self, text: str):
         try:
-            # Match Kokoro's per-word callback to our text spans in order
             def word_cb(word_datas, audio_duration):
                 self.log_message(word_datas)
                 for wd_index, wd in enumerate(word_datas):
@@ -308,18 +414,16 @@ class TTSReader(App):
                     end_index = min(start_index + 1, len(self._word_spans))
 
                     match_idx = None
-                    # Bounded forward window
                     for i in range(start_index, end_index):
                         if self._word_spans[i]["token"] == tts_word:
                             match_idx = i
                             break
 
                     if match_idx is None:
-                        # Conservative resync: advance one span if possible to avoid large jumps
                         if self._word_span_pos < len(self._word_spans):
                             match_idx = self._word_span_pos
                         else:
-                            continue  # out of spans
+                            continue
 
                     span = self._word_spans[match_idx]
                     self._word_span_pos = match_idx + 1
@@ -351,9 +455,10 @@ class TTSReader(App):
             self._word_queue.put(None)
             self.tts.wait_for_audio_streaming_complete()
             self.tts.stop_audio_streaming()
-            self.call_from_thread(lambda: self.log_message("[green]✓ Playback complete[/green]"))
+            self.call_from_thread(self.update_status, "Completed")
+            self.call_from_thread(lambda: self.log_message("[green]>>> Playback complete[/green]"))
         except Exception as e:
-            self.call_from_thread(lambda: self.log_message(f"[red]Playback error: {e}[/red]"))
+            self.call_from_thread(lambda: self.log_message(f"[red]>>> Playback error: {e}[/red]"))
         finally:
             self.tts.word_callback = None
             self._stop_highlighting.set()
@@ -361,13 +466,9 @@ class TTSReader(App):
             self.call_from_thread(self._cleanup_playback)
 
     def _ensure_tts_stopped(self):
-        """
-        Stop any ongoing TTS playback, clear queues, reset state.
-        """
         if self.tts:
             try:
                 if hasattr(self.tts, "is_streaming") and self.tts.is_streaming:
-                    # Force immediate stop if available
                     if hasattr(self.tts, "force_stop_streaming"):
                         self.tts.force_stop_streaming()
                 if hasattr(self.tts, "audio_queue"):
@@ -378,7 +479,7 @@ class TTSReader(App):
                             break
                 self.tts.is_streaming = False
             except Exception as e:
-                self.log_message(f"[yellow]Cleanup warning: {e}[/yellow]")
+                self.log_message(f"[cyan]>>> Cleanup warning: {e}[/cyan]")
 
         self._stop_highlighting.set()
         if self._highlight_worker and self._highlight_worker.is_alive():
@@ -394,15 +495,18 @@ class TTSReader(App):
         self._stop_highlighting.set()
         self._ensure_tts_stopped()
         self._cleanup_playback()
-        self.log_message("[red]⏹ Stopped[/red]")
+        self.update_status("Stopped")
+        self.log_message("[red]>>> Playback stopped[/red]")
 
     def _cleanup_playback(self):
         textarea = self.query_one("#text_input", TextArea)
-        textarea.selection = Selection()  # clear selection
+        textarea.selection = Selection()
         self.update_controls()
 
     # --- UI ---
     def log_message(self, message):
+        if not self.debug_mode:
+            return
         try:
             self.query_one("#log", RichLog).write(message)
         except Exception:
@@ -410,6 +514,11 @@ class TTSReader(App):
 
     def watch_is_playing(self, is_playing):
         self.update_controls()
+        play_btn = self.query_one("#play", Button)
+        if is_playing:
+            play_btn.label = "Pause"
+        else:
+            play_btn.label = "Play"
 
     def update_controls(self):
         try:
