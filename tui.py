@@ -530,7 +530,7 @@ class TTSReader(App):
 def main():
     import sys
     debug_mode = "--debug" in sys.argv
-    TTSReader(debug_mode=debug_mode).run(headless=False)
+    TTSReader(debug_mode=debug_mode).run()
 
 if __name__ == "__main__":
     main()

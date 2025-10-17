@@ -8,32 +8,33 @@ REQUIREMENTS_MAIN="$APP_DIR/requirement_tui.txt"
 REQUIREMENTS_KOKORO="$APP_DIR/kokoro_requirements.txt"
 APP_ENTRY="$APP_DIR/tui.py"
 
-# === Ensure pyenv + Python 3.10.12 installed ===
+# === Determine Python ===
 if command -v pyenv >/dev/null 2>&1; then
+    # Ensure Python version installed via pyenv
     if ! pyenv versions --bare | grep -qx "$PY_VERSION"; then
         echo "==> Installing Python $PY_VERSION via pyenv..."
-        pyenv install "$PY_VERSION" || {
-            echo "Error: pyenv failed to install Python $PY_VERSION"
+        pyenv install -s "$PY_VERSION" || {
+            echo "❌ pyenv failed to install Python $PY_VERSION"
             exit 1
         }
     fi
     PYTHON_BIN="$(pyenv prefix "$PY_VERSION")/bin/python"
 else
-    echo "⚠️ pyenv not found; trying system Python 3.10.12..."
+    # Fallback to system Python >=3.10
     PYTHON_BIN="$(command -v python3.10 || command -v python3 || command -v python)"
 fi
 
 if [ -z "$PYTHON_BIN" ]; then
-    echo "❌ Error: No suitable Python interpreter found."
+    echo "❌ No suitable Python found."
     exit 1
 fi
 
 echo "Using Python: $PYTHON_BIN"
 
-# === Function to create venv ===
+# === Create venv ===
 create_venv() {
-    echo "==> Creating venv at $USER_VENV (Python $PY_VERSION)"
-    rm -rf "$USER_VENV"   # remove old env if exists
+    echo "==> Creating fresh venv at $USER_VENV"
+    rm -rf "$USER_VENV"
     "$PYTHON_BIN" -m venv "$USER_VENV"
     source "$USER_VENV/bin/activate"
     pip install --upgrade pip setuptools wheel
@@ -42,39 +43,39 @@ create_venv() {
     deactivate
 }
 
-# === Create venv if missing ===
+# Create venv if missing
 [ ! -d "$USER_VENV" ] && create_venv
 
-# === Run app function ===
+# === Function to run the app ===
 run_app() {
     source "$USER_VENV/bin/activate"
-    python "$APP_ENTRY" "$@"
+    "$USER_VENV/bin/python" "$APP_ENTRY" "$@"
     local STATUS=$?
     deactivate
     return $STATUS
 }
 
-# === Attempt run ===
-run_app "$@"
-EXIT_CODE=$?
-
-# === Auto repair if failed ===
-if [ $EXIT_CODE -ne 0 ]; then
-    echo "==> Detected Python error, attempting dependency repair..."
-    source "$USER_VENV/bin/activate"
-    pip install --upgrade pip setuptools wheel
-    pip install --force-reinstall -r "$REQUIREMENTS_KOKORO"
-    pip install --force-reinstall -r "$REQUIREMENTS_MAIN"
-    deactivate
-
-    echo "==> Retrying launch..."
+# === Attempt run with auto-repair ===
+attempt_run() {
     run_app "$@"
-    EXIT_CODE=$?
+    STATUS=$?
+    if [ $STATUS -ne 0 ]; then
+        echo "==> Python error detected, reinstalling dependencies..."
+        source "$USER_VENV/bin/activate"
+        pip install --upgrade pip setuptools wheel
+        pip install --force-reinstall -r "$REQUIREMENTS_KOKORO"
+        pip install --force-reinstall -r "$REQUIREMENTS_MAIN"
+        deactivate
 
-    if [ $EXIT_CODE -ne 0 ]; then
-        echo "==> Launch still failing, removing venv and creating a fresh one..."
-        create_venv
-        echo "==> Retrying launch after fresh venv..."
         run_app "$@"
+        STATUS=$?
+
+        if [ $STATUS -ne 0 ]; then
+            echo "==> Launch still failing, recreating venv..."
+            create_venv
+            run_app "$@"
+        fi
     fi
-fi
+}
+
+attempt_run "$@"

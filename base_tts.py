@@ -34,6 +34,9 @@ class BaseTTS:
 		self.final_output_audio = "output_audio.wav"
 		self.final_output_timestamps = "output_timestamps.json"
 		self.temp_output_dir = Path("temp_audio_chunks")
+
+		if not self.temp_output_dir.exists():
+			self.temp_output_dir.mkdir(parents=True, exist_ok=True)
 		
 		# Voice and speed configuration
 		self.default_voice_index = 8
