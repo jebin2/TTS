@@ -6,8 +6,8 @@ from base_tts import BaseTTS
 class KokoroTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using KokoroTTS."""
 
-	def __init__(self, stream_audio=False):
-		super().__init__("Kokoro", stream_audio=stream_audio)
+	def __init__(self, stream_audio=False, setup_signals=True):
+		super().__init__("Kokoro", stream_audio=stream_audio, setup_signals=setup_signals)
 		self.default_voice_index = 8
 		self.default_speed = 1
 		self.voices = [
@@ -38,18 +38,25 @@ class KokoroTTSProcessor(BaseTTS):
 			tokens = result.tokens
 			audio = result.audio
 
+			callback_words = []
 			sentence = ""
 			for word in tokens:
 				sentence += word.text
-				word_timestamps.append({
+				word_data = {
 					"word": word.text,
 					"phonemes": word.phonemes,
 					"start_time": word.start_ts,
 					"end_time": word.end_ts
-				})
+				}
+				word_timestamps.append(word_data)
+				callback_words.append(word_data)
 
 			if self.stream_audio:
-				self.queue_audio_for_streaming(audio)
+				audio_duration = self.queue_audio_for_streaming(audio)
+
+				# Call the callback if set (for UI highlighting)
+				if hasattr(self, 'word_callback') and self.word_callback:
+					self.word_callback(callback_words, audio_duration)
 			if self.save_audio_file:
 				chunk_file = self.generate_chunk_audio_file(audio, chunk_id if chunk_id else i)
 				audio_files.append(chunk_file)

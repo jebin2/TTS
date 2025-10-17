@@ -8,7 +8,6 @@ from functools import reduce
 import threading
 import queue
 import time
-import signal
 import sys
 import common
 
@@ -19,7 +18,7 @@ if os.path.exists(".env"):
     load_dotenv()
 
 class BaseTTS:
-	def __init__(self, type, stream_audio=False):
+	def __init__(self, type, stream_audio=False, setup_signals=True):
 		"""Initialize BaseTTS with environment settings and configuration."""
 		if os.getenv("USE_CPU_IF_POSSIBLE", None):
 			self.device = "cpu"
@@ -63,6 +62,7 @@ class BaseTTS:
 		self.is_streaming = False
 		self.stream_thread = None
 		self.sample_rate = 24000  # Default, can be overridden by subclasses
+		self.last_playing_audio_duration_seconds = 0.1
 		
 		# Text streaming configuration
 		self.text_queue = queue.Queue()
@@ -77,7 +77,8 @@ class BaseTTS:
 		
 		# Emergency stop control
 		self.emergency_stop = False
-		self.setup_signal_handler()
+		if setup_signals:
+			self.setup_signal_handler()
 
 	# ===== UTILITY METHODS =====
 	
@@ -192,6 +193,7 @@ class BaseTTS:
 	
 	def setup_signal_handler(self):
 		"""Setup signal handler for Ctrl+C to stop everything immediately."""
+		import signal
 		signal.signal(signal.SIGINT, self.emergency_stop_handler)
 		signal.signal(signal.SIGTERM, self.emergency_stop_handler)
 
@@ -268,7 +270,8 @@ class BaseTTS:
 				audio_data = self.audio_queue.get(timeout=0.1)
 				if audio_data is None or self.emergency_stop:  # Poison pill or emergency stop
 					break
-				
+
+				self.last_playing_audio_duration_seconds = len(audio_data) / self.sample_rate
 				# Play audio chunk
 				import sounddevice as sd
 				sd.play(audio_data, samplerate=self.sample_rate)
@@ -324,6 +327,8 @@ class BaseTTS:
 			processed_audio = self._prepare_audio_for_streaming(audio_data, sample_rate)
 			if processed_audio is not None:
 				self.audio_queue.put(processed_audio)
+				return len(processed_audio) / self.sample_rate
+		return 0
 
 	def _prepare_audio_for_streaming(self, audio_data, sample_rate=None):
 		"""Prepare audio data for streaming by converting to numpy array.
@@ -386,6 +391,8 @@ class BaseTTS:
 		time.sleep(0.5)  # Small delay to ensure last chunk starts
 		while not self.audio_queue.empty() and not self.emergency_stop:
 			time.sleep(0.1)
+
+		time.sleep(self.last_playing_audio_duration_seconds)
 
 	# ===== TEXT STREAMING METHODS =====
 	

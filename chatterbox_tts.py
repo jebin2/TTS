@@ -14,7 +14,14 @@ class ChatterboxTTSProcessor(BaseTTS):
 		from chatterbox.tts import ChatterboxTTS
 		print("Loading Modal...")
 		self.model = ChatterboxTTS.from_pretrained(device=self.device)
-		self.nlp = spacy.load("en_core_web_sm")
+
+		self.nlp=None
+		try:
+			self.nlp = spacy.load("en_core_web_sm")
+		except OSError:
+			from spacy.cli import download
+			download("en_core_web_sm")
+			self.nlp = spacy.load("en_core_web_sm")
 		print("Model loaded successfully")
 
 	def tokenize_sentences(self, text):
