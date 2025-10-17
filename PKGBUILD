@@ -26,7 +26,7 @@ package() {
 
     echo "==> Copying runtime scripts..."
     for file in base_tts.py common.py kokoro_requirements.txt kokoro_tts.py \
-                README.md requirement_tui.txt tts_runner.py tui.py tts_tui.sh; do
+                README.md requirement_tui.txt tts_runner.py tui.py tts_tui.sh TTS.desktop; do
         echo "    -> Installing $file"
         install -Dm644 "$file" "${pkgdir}/${install_dir}/$file"
     done
