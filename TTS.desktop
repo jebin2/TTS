@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Speak
+Comment=Minimalistic Textual TTS Reader with Kokoro voice support
+Exec=
+Terminal=true
+Categories=Utility;
