@@ -166,8 +166,9 @@ class TTSReader(App):
         """
         spans = []
         line_starts = self._line_starts(text)
+        token_re = re.compile(r"[A-Za-z0-9]+(?:['_-][A-Za-z0-9]+)*")
         # Regex for word-like tokens (includes contractions)
-        for m in re.finditer(r"[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?", text):
+        for m in token_re.finditer(text):
             abs_start, abs_end = m.start(), m.end()
             # Map absolute index -> (row, col)
             row = bisect.bisect_right(line_starts, abs_start) - 1
