@@ -35,8 +35,8 @@ if [ $EXIT_CODE -ne 0 ]; then
     echo "==> Detected Python error, attempting dependency repair..."
     source "$USER_VENV/bin/activate"
     pip install --upgrade pip
-    pip install -r --force-reinstall "$REQUIREMENTS_KOKORO"
-    pip install -r --force-reinstall "$REQUIREMENTS_MAIN"
+    pip install --force-reinstall -r "$REQUIREMENTS_KOKORO"
+    pip install --force-reinstall -r "$REQUIREMENTS_MAIN"
     deactivate
 
     echo "==> Retrying launch..."
