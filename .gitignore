@@ -5,3 +5,10 @@ temp_audio_chunks
 output_audio.wav
 output_timestamps.json
 content.txt
+.env
+tts-tui-*.pkg.tar.zst
+*.tar.gz
+models/
+outputs/
+pkg/
+src/
