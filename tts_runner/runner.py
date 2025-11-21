@@ -36,12 +36,21 @@ def current_env():
     raise ValueError("Please set env first")
 
 def initiate(args):
-    if current_env() == "kokoro_env":
-        from .engines.kokoro import KokoroTTSProcessor as TTSEngine
-    elif current_env() == "kitten_env":
-        from .engines.kitten import KittenTTSProcessor as TTSEngine
+    model = args.get('model') if isinstance(args, dict) else getattr(args, 'model', None)
+    if not model:
+        if current_env() == "kokoro_env":
+            from .engines.kokoro import KokoroTTSProcessor as TTSEngine
+        elif current_env() == "kitten_env":
+            from .engines.kitten import KittenTTSProcessor as TTSEngine
+        else:
+            from .engines.chatterbox import ChatterboxTTSProcessor as TTSEngine
     else:
-        from .engines.chatterbox import ChatterboxTTSProcessor as TTSEngine
+        if model == "kokoro":
+            from .engines.kokoro import KokoroTTSProcessor as TTSEngine
+        elif model == "kitten":
+            from .engines.kitten import KittenTTSProcessor as TTSEngine
+        else:
+            from .engines.chatterbox import ChatterboxTTSProcessor as TTSEngine
 
     global TTS_ENGINE
     if not TTS_ENGINE:
@@ -94,6 +103,10 @@ def main():
         "--stream-text",
         action="store_true",
         help="Enable streaming text output"
+    )
+    parser.add_argument(
+        "--model",
+        help="model name"
     )
 
 
