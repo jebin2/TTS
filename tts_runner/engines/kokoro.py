@@ -1,7 +1,7 @@
 import json
 from typing import List
 from pathlib import Path
-from base_tts import BaseTTS
+from ..base import BaseTTS
 
 class KokoroTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using KokoroTTS."""

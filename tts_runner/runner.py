@@ -37,11 +37,11 @@ def current_env():
 
 def initiate(args):
     if current_env() == "kokoro_env":
-        from kokoro_tts import KokoroTTSProcessor as TTSEngine
+        from .engines.kokoro import KokoroTTSProcessor as TTSEngine
     elif current_env() == "kitten_env":
-        from kitten_tts import KittenTTSProcessor as TTSEngine
+        from .engines.kitten import KittenTTSProcessor as TTSEngine
     else:
-        from chatterbox_tts import ChatterboxTTSProcessor as TTSEngine
+        from .engines.chatterbox import ChatterboxTTSProcessor as TTSEngine
 
     global TTS_ENGINE
     if not TTS_ENGINE:

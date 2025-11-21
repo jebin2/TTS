@@ -1,6 +1,6 @@
 from typing import List
 from pathlib import Path
-from base_tts import BaseTTS
+from ..base import BaseTTS
 
 class KittenTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using KittenTTS with streaming support."""

@@ -1,4 +1,0 @@
-pydub
-sounddevice
-#pip install https://github.com/KittenML/KittenTTS/releases/download/0.1/kittentts-0.1.0-py3-none-any.whl
-#python -m spacy download en_core_web_sm

@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import List
 import spacy
 import torchaudio as ta
-from base_tts import BaseTTS
 import torch
+from ..base import BaseTTS
 
 class ChatterboxTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using ChatterboxTTS."""

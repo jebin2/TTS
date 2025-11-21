@@ -9,13 +9,13 @@ import threading
 import queue
 import time
 import sys
-import common
+from . import common
 
 from dotenv import load_dotenv
 import os
 if os.path.exists(".env"):
-    print("Loaded load_dotenv")
-    load_dotenv()
+	print("Loaded load_dotenv")
+	load_dotenv(".env")
 
 class BaseTTS:
 	def __init__(self, type, stream_audio=False, setup_signals=True):
@@ -24,11 +24,14 @@ class BaseTTS:
 			self.device = "cpu"
 		else:
 			self.device = "cuda" if common.is_gpu_available() else "cpu"
+		print(f'Using device:: {self.device}')
 		# Environment setup
 		os.environ["TORCH_USE_CUDA_DSA"] = "1"
 		os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 		os.environ["HF_HUB_TIMEOUT"] = "120"
-		
+
+		base_dir = os.path.dirname(os.path.abspath(__file__))
+
 		# File paths and directories
 		self.content_file = Path("content.txt")
 		self.final_output_audio = "output_audio.wav"
@@ -41,21 +44,22 @@ class BaseTTS:
 		# Voice and speed configuration
 		self.default_voice_index = 8
 		self.default_speed = 0.8
+
 		self.voices = [
 			None,
-			'voices/Main-4.wav',
-			'voices/Ellen-TTS-10.wav',
-			'voices/kratos(ambient)_en.wav',
-			'voices/20250329-audio-american-male.wav',
-			'voices/Ellen13y TTS-14.wav',
-			'voices/Simple guy.wav',
+			os.path.join(base_dir, 'voices/Main-4.wav'),
+			os.path.join(base_dir, 'voices/Ellen-TTS-10.wav'),
+			os.path.join(base_dir, 'voices/kratos(ambient)_en.wav'),
+			os.path.join(base_dir, 'voices/20250329-audio-american-male.wav'),
+			os.path.join(base_dir, 'voices/Ellen13y TTS-14.wav'),
+			os.path.join(base_dir, 'voices/Simple guy.wav'),
 			None,
-			'voices/bbc_news.wav',
-			'voices/en_woman.wav',
-			'voices/voice_preview_david castlemore - newsreader and educator.mp3',
-			'voices/voice_preview_kelly - storytelling & motivational content.mp3',
-			'voices/voice_preview_motivational coach - leader.mp3',
-			'voices/voice_preview_sevan bomar - black motivational speaker.mp3',
+			os.path.join(base_dir, 'voices/bbc_news.wav'),
+			os.path.join(base_dir, 'voices/en_woman.wav'),
+			os.path.join(base_dir, 'voices/voice_preview_david castlemore - newsreader and educator.mp3'),
+			os.path.join(base_dir, 'voices/voice_preview_kelly - storytelling & motivational content.mp3'),
+			os.path.join(base_dir, 'voices/voice_preview_motivational coach - leader.mp3'),
+			os.path.join(base_dir, 'voices/voice_preview_sevan bomar - black motivational speaker.mp3',)
 		]
 		
 		# General settings

@@ -17,7 +17,7 @@ import queue
 import re
 import bisect
 
-from kokoro_tts import KokoroTTSProcessor
+from .kokoro_tts import KokoroTTSProcessor
 
 
 class StatusBar(Static):

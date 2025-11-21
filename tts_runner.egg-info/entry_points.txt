@@ -1,0 +1,3 @@
+[console_scripts]
+tts-runner = tts_runner.runner:main
+tts-tui = tts_runner.tui:main

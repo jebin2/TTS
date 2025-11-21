@@ -1,0 +1,36 @@
+MANIFEST.in
+README.md
+setup.py
+tts_runner/__init__.py
+tts_runner/base.py
+tts_runner/common.py
+tts_runner/runner.py
+tts_runner/tui.py
+tts_runner.egg-info/PKG-INFO
+tts_runner.egg-info/SOURCES.txt
+tts_runner.egg-info/dependency_links.txt
+tts_runner.egg-info/entry_points.txt
+tts_runner.egg-info/requires.txt
+tts_runner.egg-info/top_level.txt
+tts_runner/engines/__init__.py
+tts_runner/engines/chatterbox.py
+tts_runner/engines/kitten.py
+tts_runner/engines/kokoro.py
+tts_runner/voices/00007.wav
+tts_runner/voices/20250329-audio-american-female.wav
+tts_runner/voices/20250329-audio-american-male.wav
+tts_runner/voices/Ellen-TTS-10.wav
+tts_runner/voices/Ellen13y TTS-14.wav
+tts_runner/voices/Main-4.wav
+tts_runner/voices/Simple guy.wav
+tts_runner/voices/VEGETA_4_504_US.wav
+tts_runner/voices/VEGETA_4_532_US.wav
+tts_runner/voices/bbc_news.wav
+tts_runner/voices/en_woman.wav
+tts_runner/voices/kratos(ambient)_en.wav
+tts_runner/voices/voice_preview_cocky male villain voice.mp3
+tts_runner/voices/voice_preview_cocky male villain voice.mp3:Zone.Identifier
+tts_runner/voices/voice_preview_david castlemore - newsreader and educator.mp3
+tts_runner/voices/voice_preview_kelly - storytelling & motivational content.mp3
+tts_runner/voices/voice_preview_motivational coach - leader.mp3
+tts_runner/voices/voice_preview_sevan bomar - black motivational speaker.mp3
