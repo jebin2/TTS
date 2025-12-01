@@ -1,0 +1,118 @@
+name: Deploy Backend to Hugging Face
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'hf_backend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Hugging Face CLI
+        run: |
+          pip install --upgrade huggingface_hub
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Clone Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git clone https://huggingface.co/spaces/jebin2/TTS hf-space
+          cd hf-space
+          git remote set-url origin https://jebin2:$HF_TOKEN@huggingface.co/spaces/jebin2/TTS
+
+      - name: Copy hf_backend files to HF Space
+        run: |
+          # Remove old files except .git
+          find hf-space -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          
+          # Copy all hf_backend files
+          cp -r hf_backend/* hf-space/
+          
+          # Copy TTS runner code
+          cp -r tts_runner hf-space/
+          cp setup.py hf-space/
+          
+          # Ensure Dockerfile exists
+          if [ ! -f hf-space/Dockerfile ]; then
+            echo "Error: Dockerfile not found in hf_backend folder"
+            exit 1
+          fi
+
+      - name: Create README for HF Space
+        run: |
+          cat > hf-space/README.md << 'EOF'
+          ---
+          title: TTS Text-to-Speech Generator
+          emoji: 🎵
+          colorFrom: blue
+          colorTo: purple
+          sdk: docker
+          pinned: false
+          license: mit
+          ---
+
+          # TTS Text-to-Speech Generator
+
+          A Python-based text-to-speech service with a neobrutalist web interface.
+
+          ## Features
+          - 📝 Text-to-Speech generation
+          - 🤖 Multiple voices and speeds
+          - 💾 SQLite database for queue management
+          - 🎨 Neobrutalist UI with smooth animations
+          - 🔄 Real-time status updates
+
+          ## Usage
+          Access the web interface at the Space URL above.
+
+          ## API Endpoints
+          - POST `/api/generate` - Generate audio from text
+          - GET `/api/files` - Get all files
+          - GET `/api/download/<id>` - Download generated audio
+
+          ---
+          *Auto-deployed from GitHub*
+          EOF
+
+      - name: Commit and push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cd hf-space
+          git add .
+          
+          # Check if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-deploy from GitHub: ${{ github.sha }}"
+            git push origin main
+            echo "✅ Successfully deployed to Hugging Face Space!"
+          fi
+
+      - name: Deployment Summary
+        run: |
+          echo "🚀 Deployment completed!"
+          echo "📍 Space URL: https://huggingface.co/spaces/jebin2/TTS"
+          echo "📝 Commit SHA: ${{ github.sha }}"
