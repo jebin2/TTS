@@ -184,7 +184,8 @@
             font-weight: bold;
         }
 
-        select, input[type="number"] {
+        select,
+        input[type="number"] {
             width: 100%;
             padding: 0.8rem;
             background: var(--bg);
@@ -498,9 +499,9 @@
 
         <div class="input-section">
             <h2 style="margin-bottom: 1.5rem; color: var(--primary);">Generate Audio</h2>
-            
+
             <textarea id="textInput" placeholder="Enter text to convert to speech..."></textarea>
-            
+
             <div class="controls">
                 <div class="control-group">
                     <label>Voice</label>
@@ -660,8 +661,8 @@
             setTimeout(() => refreshBtn.textContent = icon, 500);
         });
 
-        // Auto refresh every 5 seconds
-        setInterval(loadFiles, 5000);
+        // Auto-refresh every 10 minutes
+        setInterval(loadFiles, 1000 * 60 * 10);
 
         // Initial load
         loadFiles();
