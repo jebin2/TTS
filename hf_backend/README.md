@@ -1,11 +1,11 @@
 # TTS Text-to-Speech Generator
 
-A Python-based text-to-speech service with a neobrutalist web interface. Upload text files via API, process them with TTS (Text-to-Speech), and view results in a stunning UI.
+A Python-based text-to-speech service with a neobrutalist web interface. Generate audio from text using the Kokoro model and download the results.
 
 ## Features
 
-- 🎵 Text file upload via REST API
-- 🤖 Automatic TTS processing using kokoro
+- 📝 Text-to-Speech generation
+- 🤖 Multiple voices and speeds
 - 💾 SQLite database for queue management
 - 🎨 Neobrutalist UI with smooth animations
 - 🔄 Real-time status updates
@@ -14,13 +14,14 @@ A Python-based text-to-speech service with a neobrutalist web interface. Upload 
 ## Project Structure
 
 ```
-audio-caption-project/
-├── app.py              # Flask API server
-├── worker.py           # Background STT processing service
-├── index.html          # Frontend UI
-├── requirements.txt    # Python dependencies
-├── audio_captions.db   # SQLite database (auto-created)
-└── uploads/            # Uploaded audio files (auto-created)
+TTS/
+├── hf_backend/
+│   ├── app.py              # Flask API server & Worker
+│   ├── index.html          # Frontend UI
+│   ├── requirements.txt    # Python dependencies
+│   └── Dockerfile          # Docker configuration
+├── tts_runner/             # TTS Logic Package
+└── setup.py                # Package setup
 ```
 
 ## Setup Instructions
@@ -28,133 +29,92 @@ audio-caption-project/
 ### 1. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r hf_backend/requirements.txt
 ```
 
-### 2. Set Up TTS Tool
-
-Make sure you have the `kokoro` tool available in your PATH or current directory. This should be the kokoro based transcription tool.
-
-### 3. Start the API Server
+### 2. Start the Server
 
 ```bash
+cd hf_backend
 python app.py
 ```
 
-The server will start on `http://localhost:5000`
+The server will start on `http://localhost:7860` (or the port specified by PORT env var).
+The background worker starts automatically with the server.
 
-### 4. Start the Background Worker
-
-In a separate terminal:
-
-```bash
-python worker.py
-```
-
-The worker will poll the database every 5 seconds for new files to process.
-
-### 5. Access the Web Interface
+### 3. Access the Web Interface
 
 Open your browser and navigate to:
 ```
-http://localhost:5000
+http://localhost:7860
 ```
 
 ## Usage
 
 ### Via Web Interface
 
-1. Click or drag-and-drop a text file onto the upload zone
-2. Click "Upload & Process"
-3. Watch the status update in real-time
-4. View the generated caption once processing completes
+1. Enter text in the textarea
+2. Select a voice and speed
+3. Click "Generate Audio"
+4. Watch the status update in real-time
+5. Download the generated audio once processing completes
 
 ### Via API
 
-**Upload Text File:**
+**Generate Audio:**
 ```bash
-curl -X POST http://localhost:5000/api/upload \
-  -F "audio=@/path/to/your/audio.wav"
+curl -X POST http://localhost:7860/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello world", "voice": "8", "speed": 1.0}'
 ```
 
-**Get All Files:**
+**Get All Tasks:**
 ```bash
-curl http://localhost:5000/api/files
+curl http://localhost:7860/api/files
 ```
 
-**Get Specific File:**
+**Download Audio:**
 ```bash
-curl http://localhost:5000/api/files/<file_id>
+curl -O http://localhost:7860/api/download/<task_id>
 ```
 
 ## API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/upload` | POST | Upload text file |
-| `/api/files` | GET | Get all files |
-| `/api/files/<id>` | GET | Get specific file |
+| `/api/generate` | POST | Queue a new TTS task |
+| `/api/files` | GET | Get all tasks and statuses |
+| `/api/download/<id>` | GET | Download generated audio |
 
 ## Database Schema
 
 ```sql
-CREATE TABLE tts_files (
+CREATE TABLE tasks (
     id TEXT PRIMARY KEY,
-    filename TEXT NOT NULL,
-    filepath TEXT NOT NULL,
+    text TEXT NOT NULL,
+    voice TEXT,
+    speed REAL,
     status TEXT NOT NULL,
-    caption TEXT,
+    output_file TEXT,
     created_at TEXT NOT NULL,
-    processed_at TEXT
+    processed_at TEXT,
+    error TEXT
 );
 ```
 
 ## Status Values
 
-- `not_started` - File uploaded, waiting for processing
-- `processing` - Currently being transcribed
-- `completed` - Successfully transcribed
-- `failed` - Error during transcription
-
-## Configuration
-
-Edit these variables in `worker.py` to customize:
-
-```python
-CWD = "./"                          # Working directory
-PYTHON_PATH = "kokoro"      # Path to TTS tool
-POLL_INTERVAL = 5                    # Polling interval in seconds
-```
-
-## Supported Audio Formats
-
-- WAV
-- MP3
-- FLAC
-- OGG
-- M4A
-- AAC
-
-## Troubleshooting
-
-**Worker not processing files:**
-- Ensure the `kokoro` tool is properly installed
-- Check that the temp_dir exists for output
-- Verify the audio file path is correct
-
-**CORS errors:**
-- Make sure flask-cors is installed
-- Check that the API server is running
-
-**Database errors:**
-- Delete `tts_files.db` and restart the API server to recreate it
+- `not_started` - Task queued, waiting for processing
+- `processing` - Currently generating audio
+- `completed` - Successfully generated
+- `failed` - Error during generation
 
 ## Tech Stack
 
 - **Backend:** Flask (Python)
 - **Database:** SQLite
 - **Frontend:** Vanilla HTML/CSS/JavaScript
-- **TTS:** kokoro
+- **TTS:** Kokoro (via tts_runner)
 - **Design:** Neobrutalism with neon accents
 
 ## License
