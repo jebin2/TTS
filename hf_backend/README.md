@@ -1,11 +1,11 @@
-# Audio Caption Generator
+# TTS Text-to-Speech Generator
 
-A Python-based audio transcription service with a neobrutalist web interface. Upload audio files via API, process them with STT (Speech-to-Text), and view results in a stunning UI.
+A Python-based text-to-speech service with a neobrutalist web interface. Upload text files via API, process them with TTS (Text-to-Speech), and view results in a stunning UI.
 
 ## Features
 
-- 🎵 Audio file upload via REST API
-- 🤖 Automatic STT processing using faster-whisper
+- 🎵 Text file upload via REST API
+- 🤖 Automatic TTS processing using kokoro
 - 💾 SQLite database for queue management
 - 🎨 Neobrutalist UI with smooth animations
 - 🔄 Real-time status updates
@@ -31,9 +31,9 @@ audio-caption-project/
 pip install -r requirements.txt
 ```
 
-### 2. Set Up STT Tool
+### 2. Set Up TTS Tool
 
-Make sure you have the `stt-transcribe` tool available in your PATH or current directory. This should be the faster-whisper based transcription tool.
+Make sure you have the `kokoro` tool available in your PATH or current directory. This should be the kokoro based transcription tool.
 
 ### 3. Start the API Server
 
@@ -64,14 +64,14 @@ http://localhost:5000
 
 ### Via Web Interface
 
-1. Click or drag-and-drop an audio file onto the upload zone
+1. Click or drag-and-drop a text file onto the upload zone
 2. Click "Upload & Process"
 3. Watch the status update in real-time
 4. View the generated caption once processing completes
 
 ### Via API
 
-**Upload Audio File:**
+**Upload Text File:**
 ```bash
 curl -X POST http://localhost:5000/api/upload \
   -F "audio=@/path/to/your/audio.wav"
@@ -91,14 +91,14 @@ curl http://localhost:5000/api/files/<file_id>
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/upload` | POST | Upload audio file |
+| `/api/upload` | POST | Upload text file |
 | `/api/files` | GET | Get all files |
 | `/api/files/<id>` | GET | Get specific file |
 
 ## Database Schema
 
 ```sql
-CREATE TABLE audio_files (
+CREATE TABLE tts_files (
     id TEXT PRIMARY KEY,
     filename TEXT NOT NULL,
     filepath TEXT NOT NULL,
@@ -122,8 +122,7 @@ Edit these variables in `worker.py` to customize:
 
 ```python
 CWD = "./"                          # Working directory
-PYTHON_PATH = "stt-transcribe"      # Path to STT tool
-STT_MODEL_NAME = "fasterwhispher"   # Model name
+PYTHON_PATH = "kokoro"      # Path to TTS tool
 POLL_INTERVAL = 5                    # Polling interval in seconds
 ```
 
@@ -139,7 +138,7 @@ POLL_INTERVAL = 5                    # Polling interval in seconds
 ## Troubleshooting
 
 **Worker not processing files:**
-- Ensure the `stt-transcribe` tool is properly installed
+- Ensure the `kokoro` tool is properly installed
 - Check that the temp_dir exists for output
 - Verify the audio file path is correct
 
@@ -148,14 +147,14 @@ POLL_INTERVAL = 5                    # Polling interval in seconds
 - Check that the API server is running
 
 **Database errors:**
-- Delete `audio_captions.db` and restart the API server to recreate it
+- Delete `tts_files.db` and restart the API server to recreate it
 
 ## Tech Stack
 
 - **Backend:** Flask (Python)
 - **Database:** SQLite
 - **Frontend:** Vanilla HTML/CSS/JavaScript
-- **STT:** faster-whisper
+- **TTS:** kokoro
 - **Design:** Neobrutalism with neon accents
 
 ## License
