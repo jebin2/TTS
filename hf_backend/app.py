@@ -201,11 +201,25 @@ def get_files():
     c = conn.cursor()
     c.execute('SELECT * FROM tasks ORDER BY created_at DESC')
     rows = c.fetchall()
+    
+    # Get queue order for not_started tasks (oldest first = position 1)
+    c.execute('''SELECT id FROM tasks 
+                 WHERE status = 'not_started' 
+                 ORDER BY created_at ASC''')
+    queue_order = [r['id'] for r in c.fetchall()]
+    
+    # Check if any task is currently processing
+    c.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "processing"')
+    processing_count = c.fetchone()['count']
+    
     conn.close()
+    
+    # Average processing time in seconds (can be adjusted based on actual metrics)
+    AVG_PROCESSING_TIME = 30
     
     files = []
     for row in rows:
-        files.append({
+        file_data = {
             'id': row['id'],
             'text': row['text'],
             'status': row['status'],
@@ -213,7 +227,18 @@ def get_files():
             'created_at': row['created_at'],
             'processed_at': row['processed_at'],
             'error': row['error']
-        })
+        }
+        
+        # Add queue position for not_started tasks
+        if row['status'] == 'not_started' and row['id'] in queue_order:
+            queue_position = queue_order.index(row['id']) + 1  # 1-indexed
+            file_data['queue_position'] = queue_position
+            # Estimated time = (position - 1 + processing_count) * avg_time
+            # If something is processing, add that to the wait
+            tasks_ahead = queue_position - 1 + processing_count
+            file_data['estimated_start_seconds'] = tasks_ahead * AVG_PROCESSING_TIME
+        
+        files.append(file_data)
     
     return jsonify(files)
 

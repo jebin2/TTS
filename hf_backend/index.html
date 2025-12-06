@@ -524,9 +524,15 @@
                 </div>
             </div>
 
-            <button class="btn" id="generateBtn">
-                🚀 Generate Audio
-            </button>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn" id="generateBtn" style="flex: 1; min-width: 200px;">
+                    🚀 Generate Audio
+                </button>
+                <button class="btn btn-secondary" id="uploadBtn" style="flex: 1; min-width: 200px;">
+                    📁 Upload File
+                </button>
+                <input type="file" id="fileInput" accept=".txt,.md,.text" style="display: none;">
+            </div>
         </div>
 
         <div class="table-section">
@@ -571,6 +577,8 @@
         const voiceSelect = document.getElementById('voiceSelect');
         const speedInput = document.getElementById('speedInput');
         const generateBtn = document.getElementById('generateBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput = document.getElementById('fileInput');
         const loader = document.getElementById('loader');
         const refreshBtn = document.getElementById('refreshBtn');
 
@@ -618,6 +626,74 @@
                 loader.style.display = 'none';
                 generateBtn.disabled = false;
             }
+        });
+
+        // Upload button - opens file picker
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File input change - auto-submit for TTS
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Read file content
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const text = event.target.result.trim();
+                
+                if (!text) {
+                    showNotification('File is empty!', 'error');
+                    fileInput.value = ''; // Reset file input
+                    return;
+                }
+
+                const voice = voiceSelect.value;
+                const speed = parseFloat(speedInput.value);
+
+                // Show loader
+                loader.style.display = 'flex';
+                uploadBtn.disabled = true;
+                generateBtn.disabled = true;
+
+                try {
+                    const response = await fetch(`${API_URL}/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            text,
+                            voice,
+                            speed
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showNotification(`File "${file.name}" queued for TTS! 🎉`);
+                        loadFiles();
+                    } else {
+                        showNotification(data.error || 'Upload failed', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Network error: ' + error.message, 'error');
+                } finally {
+                    loader.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    generateBtn.disabled = false;
+                    fileInput.value = ''; // Reset file input for next upload
+                }
+            };
+
+            reader.onerror = () => {
+                showNotification('Error reading file!', 'error');
+                fileInput.value = '';
+            };
+
+            reader.readAsText(file);
         });
 
         // Load files
