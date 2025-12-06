@@ -633,59 +633,26 @@
             fileInput.click();
         });
 
-        // File input change - auto-submit for TTS
-        fileInput.addEventListener('change', async (e) => {
+        // File input change - fill textarea with file content
+        fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
             // Read file content
             const reader = new FileReader();
-            reader.onload = async (event) => {
+            reader.onload = (event) => {
                 const text = event.target.result.trim();
-                
+
                 if (!text) {
                     showNotification('File is empty!', 'error');
-                    fileInput.value = ''; // Reset file input
+                    fileInput.value = '';
                     return;
                 }
 
-                const voice = voiceSelect.value;
-                const speed = parseFloat(speedInput.value);
-
-                // Show loader
-                loader.style.display = 'flex';
-                uploadBtn.disabled = true;
-                generateBtn.disabled = true;
-
-                try {
-                    const response = await fetch(`${API_URL}/generate`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            text,
-                            voice,
-                            speed
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        showNotification(`File "${file.name}" queued for TTS! 🎉`);
-                        loadFiles();
-                    } else {
-                        showNotification(data.error || 'Upload failed', 'error');
-                    }
-                } catch (error) {
-                    showNotification('Network error: ' + error.message, 'error');
-                } finally {
-                    loader.style.display = 'none';
-                    uploadBtn.disabled = false;
-                    generateBtn.disabled = false;
-                    fileInput.value = ''; // Reset file input for next upload
-                }
+                // Fill textarea with file content
+                textInput.value = text;
+                showNotification(`Loaded "${file.name}" - Ready to generate! 📄`);
+                fileInput.value = ''; // Reset for next upload
             };
 
             reader.onerror = () => {
