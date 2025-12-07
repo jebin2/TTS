@@ -3,7 +3,7 @@ from flask_cors import CORS
 import sqlite3
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import threading
 import subprocess
@@ -21,6 +21,9 @@ os.makedirs('temp_dir', exist_ok=True)
 worker_thread = None
 worker_running = False
 
+# Cleanup settings
+RETENTION_DAYS = 10  # Delete entries older than this many days
+
 def init_db():
     conn = sqlite3.connect('tts_tasks.db')
     c = conn.cursor()
@@ -36,6 +39,50 @@ def init_db():
                   error TEXT)''')
     conn.commit()
     conn.close()
+
+def cleanup_old_entries():
+    """Delete entries older than RETENTION_DAYS along with their audio files"""
+    cutoff_date = (datetime.now() - timedelta(days=RETENTION_DAYS)).isoformat()
+    
+    print(f"\n🧹 Running cleanup for entries older than {RETENTION_DAYS} days...")
+    
+    try:
+        conn = sqlite3.connect('tts_tasks.db')
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        # Find old entries
+        c.execute('SELECT id, output_file FROM tasks WHERE created_at < ?', (cutoff_date,))
+        old_entries = c.fetchall()
+        
+        if not old_entries:
+            print("   No old entries to clean up.")
+            conn.close()
+            return
+        
+        deleted_count = 0
+        for entry in old_entries:
+            task_id = entry['id']
+            output_file = entry['output_file']
+            
+            # Delete audio file if it exists
+            if output_file:
+                file_path = os.path.join(UPLOAD_FOLDER, output_file)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    print(f"   🗑️  Deleted audio: {output_file}")
+            
+            # Delete database entry
+            c.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+            deleted_count += 1
+        
+        conn.commit()
+        conn.close()
+        
+        print(f"   ✅ Cleaned up {deleted_count} old entries.\n")
+        
+    except Exception as e:
+        print(f"   ⚠️  Cleanup error: {str(e)}\n")
 
 def start_worker():
     """Start the worker thread if not already running"""
@@ -73,6 +120,9 @@ def worker_loop():
                 text = row['text']
                 voice = row['voice'] or '8' # Default voice
                 speed = row['speed'] or 1.0
+                
+                # Run cleanup before processing each task
+                cleanup_old_entries()
                 
                 print(f"\n{'='*60}")
                 print(f"🎵 Processing Task: {task_id}")
