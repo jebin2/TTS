@@ -1,0 +1,46 @@
+name: Daily TTS Trigger
+
+on:
+  schedule:
+    # Runs at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual trigger for testing
+
+jobs:
+  trigger-tts:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger TTS Generation
+        run: |
+          SCRIPT_TEXT="Goku: Hey Vegeta, guess what?
+          Vegeta: No.
+          Goku: …You didn't even let me say it!
+          Vegeta: Because whatever it is, it's stupid.
+          Goku: I just learned how to super sneeze.
+          Vegeta: Kakarot, if you blow up another mountain, I'm leaving."
+
+          echo "🎤 Triggering TTS generation..."
+          
+          response=$(curl -s -w "\n%{http_code}" -X POST https://jebin2-tts.hf.space/api/generate \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg text "$SCRIPT_TEXT" '{text: $text, voice: "8", speed: 1.0}')")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+          
+          if [ "$http_code" -eq 201 ]; then
+            echo "✅ TTS task queued successfully!"
+            echo "$body" | jq .
+          else
+            echo "❌ Failed to queue TTS task"
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "🚀 Daily TTS trigger completed!"
+          echo "📍 Check status at: https://jebin2-tts.hf.space"
