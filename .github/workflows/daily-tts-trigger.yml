@@ -2,8 +2,8 @@ name: Daily TTS Trigger
 
 on:
   schedule:
-    # Runs at 2 AM UTC every day
-    - cron: '0 2 * * *'
+    # Runs at 2 PM IST (8:30 AM UTC) every day
+    - cron: '30 8 * * *'
   workflow_dispatch:  # Allow manual trigger for testing
 
 jobs:
