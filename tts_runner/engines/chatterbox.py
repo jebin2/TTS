@@ -8,10 +8,14 @@ from ..base import BaseTTS
 class ChatterboxTTSProcessor(BaseTTS):
 	"""Text-to-Speech processor using ChatterboxTTS."""
 	
-	def __init__(self, stream_audio=False):
+	def __init__(self, stream_audio=False, is_turbo=True):
+		self.is_turbo = is_turbo
 		super().__init__("Chatterbox", stream_audio=stream_audio)
 		print("Initializing Chatterbox...")
-		from chatterbox.tts import ChatterboxTTS
+		if self.is_turbo:
+			from chatterbox.tts_turbo import ChatterboxTurboTTS as ChatterboxTTS
+		else:
+			from chatterbox.tts import ChatterboxTTS as ChatterboxTTS
 		print("Loading Modal...")
 		self.model = ChatterboxTTS.from_pretrained(device=self.device)
 
@@ -48,7 +52,12 @@ class ChatterboxTTSProcessor(BaseTTS):
 		from chatterbox.tts import punc_norm
 		with torch.inference_mode():
 			normalized = punc_norm(text)
-			tokens = self.model.tokenizer.text_to_tokens(normalized)
+
+			# Use the standard tokenizer encode method instead of text_to_tokens
+			if self.is_turbo:
+				tokens = self.model.tokenizer.encode(normalized, return_tensors='pt')
+			else:
+				tokens = self.model.tokenizer.text_to_tokens(normalized)
 			token_count = tokens.shape[1]
 
 			# Clear tokens from GPU memory immediately
