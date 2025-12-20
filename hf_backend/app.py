@@ -36,7 +36,10 @@ def init_db():
                   output_file TEXT,
                   created_at TEXT NOT NULL,
                   processed_at TEXT,
-                  error TEXT)''')
+                  error TEXT,
+                  progress INTEGER DEFAULT 0,
+                  progress_text TEXT)''')
+
     conn.commit()
     conn.close()
 
@@ -147,16 +150,54 @@ def worker_loop():
                         "--speed", str(speed)
                     ]
                     
-                    subprocess.run(
+                    # Run with output capture for progress tracking
+                    import re
+                    process = subprocess.Popen(
                         command,
-                        check=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
                         cwd=CWD,
+                        text=True,
+                        bufsize=1,
                         env={
                             **os.environ,
                             'PYTHONUNBUFFERED': '1',
                             'CUDA_LAUNCH_BLOCKING': '1'
                         }
                     )
+                    
+                    total_sentences = 0
+                    current_sentence = 0
+                    
+                    for line in process.stdout:
+                        print(line, end='')  # Echo to console
+                        
+                        # Parse "Sentence X processed" lines
+                        match = re.search(r'Sentence\s+(\d+)\s+processed', line)
+                        if match:
+                            current_sentence = int(match.group(1))
+                            # Try to get total from "Combining X audio files"
+                            if total_sentences > 0:
+                                progress = int((current_sentence / total_sentences) * 100)
+                                update_progress(task_id, progress, f"Processing sentence {current_sentence}/{total_sentences}")
+                        
+                        # Parse "Combining X audio files" to get total count
+                        combine_match = re.search(r'Combining\s+(\d+)\s+audio\s+files', line)
+                        if combine_match:
+                            total_sentences = int(combine_match.group(1))
+                            update_progress(task_id, 90, "Combining audio files...")
+                        
+                        # Parse "Processing text sentences..." as start
+                        if 'Processing text sentences' in line:
+                            update_progress(task_id, 5, "Processing text sentences...")
+                        
+                        # Parse model loading
+                        if 'Model loaded successfully' in line:
+                            update_progress(task_id, 10, "Model loaded, starting TTS...")
+                    
+                    process.wait()
+                    if process.returncode != 0:
+                        raise Exception(f"TTS process failed with return code {process.returncode}")
                     
                     # Check for output file
                     output_filename = "output_audio.wav"
@@ -186,6 +227,15 @@ def worker_loop():
             print(f"⚠️  Worker error: {str(e)}")
             time.sleep(POLL_INTERVAL)
 
+def update_progress(task_id, progress, progress_text=None):
+    """Update the progress of a task"""
+    conn = sqlite3.connect('tts_tasks.db')
+    c = conn.cursor()
+    c.execute('UPDATE tasks SET progress = ?, progress_text = ? WHERE id = ?',
+              (progress, progress_text, task_id))
+    conn.commit()
+    conn.close()
+
 def update_status(task_id, status, output_file=None, error=None):
     """Update the status of a task in the database"""
     conn = sqlite3.connect('tts_tasks.db')
@@ -193,12 +243,12 @@ def update_status(task_id, status, output_file=None, error=None):
     
     if status == 'completed':
         c.execute('''UPDATE tasks 
-                     SET status = ?, output_file = ?, processed_at = ?
+                     SET status = ?, output_file = ?, processed_at = ?, progress = 100, progress_text = 'Completed'
                      WHERE id = ?''',
                   (status, output_file, datetime.now().isoformat(), task_id))
     elif status == 'failed':
         c.execute('''UPDATE tasks 
-                     SET status = ?, error = ?, processed_at = ?
+                     SET status = ?, error = ?, processed_at = ?, progress_text = 'Failed'
                      WHERE id = ?''',
                   (status, str(error), datetime.now().isoformat(), task_id))
     else:
@@ -276,7 +326,9 @@ def get_files():
             'output_file': row['output_file'],
             'created_at': row['created_at'],
             'processed_at': row['processed_at'],
-            'error': row['error']
+            'error': row['error'],
+            'progress': row['progress'] or 0,
+            'progress_text': row['progress_text']
         }
         
         # Add queue position for not_started tasks

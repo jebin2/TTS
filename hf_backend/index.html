@@ -350,6 +350,49 @@
             color: var(--text);
         }
 
+        /* Progress display */
+        .status-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            min-width: 120px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid var(--accent);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s ease;
+            animation: progressPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes progressPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .progress-text {
+            font-size: 0.7rem;
+            color: var(--accent);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .text-cell {
             max-width: 300px;
             overflow: hidden;
@@ -798,6 +841,24 @@
                     const escapedText = escapeHtml(file.text);
                     const truncatedText = file.text.length > 50 ? file.text.substring(0, 50) + '...' : file.text;
 
+                    // Build status display with progress
+                    let statusDisplay = '';
+                    if (file.status === 'processing') {
+                        const progressPercent = file.progress || 0;
+                        const progressText = file.progress_text || 'Processing...';
+                        statusDisplay = `
+                            <div class="status-progress">
+                                <span class="status status-${file.status}">${progressPercent}%</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: ${progressPercent}%"></div>
+                                </div>
+                                <span class="progress-text">${escapeHtml(progressText)}</span>
+                            </div>
+                        `;
+                    } else {
+                        statusDisplay = `<span class="status status-${file.status}">${file.status.replace('_', ' ')}</span>`;
+                    }
+
                     return `
                     <tr>
                         <td>
@@ -806,7 +867,7 @@
                                 <button class="btn btn-small btn-view-text" onclick="showTextPopup(${index})">👁️ View</button>
                             </div>
                         </td>
-                        <td><span class="status status-${file.status}">${file.status.replace('_', ' ')}</span></td>
+                        <td>${statusDisplay}</td>
                         <td>
                             ${file.status === 'completed' && file.output_file ?
                             `<a href="${API_URL}/download/${file.id}" class="btn btn-small btn-secondary" target="_blank">⬇️</a>`
