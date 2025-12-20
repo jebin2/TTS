@@ -661,107 +661,109 @@
                 <div class="control-group">
                     <label>Voice</label>
                     <select id="voiceSelect">
-                        <!-- Default -->
-                        <option value="af">Default Mix (af)</option>
+                        <!-- Index 0: Default -->
+                        <option value="0" style="display: none;">Default Mix (af)</option>
 
-                        <!-- American Female -->
+                        <!-- American Female (indices 1-11) -->
                         <optgroup label="American Female">
-                            <option value="af_alloy">Alloy</option>
-                            <option value="af_aoede">Aoede</option>
-                            <option value="af_bella">Bella</option>
-                            <option value="af_heart">Heart</option>
-                            <option value="af_jessica">Jessica</option>
-                            <option value="af_kore">Kore</option>
-                            <option value="af_nicole">Nicole</option>
-                            <option value="af_nova">Nova</option>
-                            <option value="af_river">River</option>
-                            <option value="af_sarah">Sarah</option>
-                            <option value="af_sky">Sky</option>
+                            <option value="1">Alloy</option>
+                            <option value="2">Aoede</option>
+                            <option value="3">Bella</option>
+                            <option value="4">Heart</option>
+                            <option value="5">Jessica</option>
+                            <option value="6">Kore</option>
+                            <option value="7">Nicole</option>
+                            <option value="8">Nova</option>
+                            <option value="9">River</option>
+                            <option value="10">Sarah</option>
+                            <option value="11">Sky</option>
                         </optgroup>
 
-                        <!-- American Male -->
+                        <!-- American Male (indices 12-20) -->
                         <optgroup label="American Male">
-                            <option value="am_adam">Adam</option>
-                            <option value="am_echo">Echo</option>
-                            <option value="am_eric">Eric</option>
-                            <option value="am_fenrir">Fenrir</option>
-                            <option value="am_liam">Liam</option>
-                            <option value="am_michael">Michael</option>
-                            <option value="am_onyx">Onyx</option>
-                            <option value="am_puck">Puck</option>
-                            <option value="am_santa">Santa</option>
+                            <option value="12">Adam</option>
+                            <option value="13">Echo</option>
+                            <option value="14">Eric</option>
+                            <option value="15">Fenrir</option>
+                            <option value="16">Liam</option>
+                            <option value="17">Michael</option>
+                            <option value="18">Onyx</option>
+                            <option value="19">Puck</option>
+                            <option value="20">Santa</option>
                         </optgroup>
 
-                        <!-- British Female -->
+                        <!-- British Female (indices 21-24) -->
                         <optgroup label="British Female">
-                            <option value="bf_alice">Alice</option>
-                            <option value="bf_emma">Emma</option>
-                            <option value="bf_isabella">Isabella</option>
-                            <option value="bf_lily">Lily</option>
+                            <option value="21">Alice</option>
+                            <option value="22">Emma</option>
+                            <option value="23">Isabella</option>
+                            <option value="24">Lily</option>
                         </optgroup>
 
-                        <!-- British Male -->
+                        <!-- British Male (indices 25-28) -->
                         <optgroup label="British Male">
-                            <option value="bm_daniel">Daniel</option>
-                            <option value="bm_fable">Fable</option>
-                            <option value="bm_george">George</option>
-                            <option value="bm_lewis" selected>Lewis</option>
+                            <option value="25">Daniel</option>
+                            <option value="26">Fable</option>
+                            <option value="27">George</option>
+                            <option value="28" selected>Lewis</option>
                         </optgroup>
 
-                        <!-- European -->
+                        <!-- European (indices 29-31) -->
                         <optgroup label="European">
-                            <option value="ef_dora">Dora (Female)</option>
-                            <option value="em_alex">Alex (Male)</option>
-                            <option value="em_santa">Santa (Male)</option>
+                            <option value="29">Dora (Female)</option>
+                            <option value="30">Alex (Male)</option>
+                            <option value="31">Santa (Male)</option>
                         </optgroup>
 
-                        <!-- French -->
+                        <!-- French (index 32) -->
                         <optgroup label="French">
-                            <option value="ff_siwis">Siwis (Female)</option>
+                            <option value="32">Siwis (Female)</option>
                         </optgroup>
 
-                        <!-- Hindi -->
+                        <!-- Hindi (indices 33-36) -->
                         <optgroup label="Hindi">
-                            <option value="hf_alpha">Alpha (Female)</option>
-                            <option value="hf_beta">Beta (Female)</option>
-                            <option value="hm_omega">Omega (Male)</option>
-                            <option value="hm_psi">Psi (Male)</option>
+                            <option value="33">Alpha (Female)</option>
+                            <option value="34">Beta (Female)</option>
+                            <option value="35">Omega (Male)</option>
+                            <option value="36">Psi (Male)</option>
                         </optgroup>
 
-                        <!-- Italian -->
+                        <!-- Italian (indices 37-38) -->
                         <optgroup label="Italian">
-                            <option value="if_sara">Sara (Female)</option>
-                            <option value="im_nicola">Nicola (Male)</option>
+                            <option value="37">Sara (Female)</option>
+                            <option value="38">Nicola (Male)</option>
                         </optgroup>
 
-                        <!-- Japanese -->
+                        <!-- Japanese (indices 39-43) -->
                         <optgroup label="Japanese">
-                            <option value="jf_alpha">Alpha (Female)</option>
-                            <option value="jf_gongitsune">Gongitsune (Female)</option>
-                            <option value="jf_nezumi">Nezumi (Female)</option>
-                            <option value="jf_tebukuro">Tebukuro (Female)</option>
-                            <option value="jm_kumo">Kumo (Male)</option>
+                            <option value="39">Alpha (Female)</option>
+                            <option value="40">Gongitsune (Female)</option>
+                            <option value="41">Nezumi (Female)</option>
+                            <option value="42">Tebukuro (Female)</option>
+                            <option value="43">Kumo (Male)</option>
                         </optgroup>
 
-                        <!-- Portuguese -->
+                        <!-- Portuguese (indices 44-46) -->
                         <optgroup label="Portuguese">
-                            <option value="pf_dora">Dora (Female)</option>
-                            <option value="pm_alex">Alex (Male)</option>
-                            <option value="pm_santa">Santa (Male)</option>
+                            <option value="44">Dora (Female)</option>
+                            <option value="45">Alex (Male)</option>
+                            <option value="46">Santa (Male)</option>
                         </optgroup>
 
-                        <!-- Chinese -->
+                        <!-- Chinese Female (indices 47-50) -->
                         <optgroup label="Chinese Female">
-                            <option value="zf_xiaobei">Xiaobei</option>
-                            <option value="zf_xiaoni">Xiaoni</option>
-                            <option value="zf_xiaoxiao">Xiaoxiao</option>
-                            <option value="zf_xiaoyi">Xiaoyi</option>
+                            <option value="47">Xiaobei</option>
+                            <option value="48">Xiaoni</option>
+                            <option value="49">Xiaoxiao</option>
+                            <option value="50">Xiaoyi</option>
                         </optgroup>
+
+                        <!-- Chinese Male (indices 51-54) -->
                         <optgroup label="Chinese Male">
-                            <option value="zm_yunjian">Yunjian</option>
-                            <option value="zm_yunxi">Yunxi</option>
-                            <option value="zm_yunxia">Yunxia</option>
-                            <option value="zm_yunyang">Yunyang</option>
+                            <option value="51">Yunjian</option>
+                            <option value="52">Yunxi</option>
+                            <option value="53">Yunxia</option>
+                            <option value="54">Yunyang</option>
                         </optgroup>
                     </select>
                 </div>
