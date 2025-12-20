@@ -809,7 +809,7 @@
                         <td><span class="status status-${file.status}">${file.status.replace('_', ' ')}</span></td>
                         <td>
                             ${file.status === 'completed' && file.output_file ?
-                            `<a href="${API_URL}/download/${file.id}" class="btn btn-small btn-secondary" target="_blank">⬇️ Download</a>`
+                            `<a href="${API_URL}/download/${file.id}" class="btn btn-small btn-secondary" target="_blank">⬇️</a>`
                             : '—'}
                         </td>
                         <td>${new Date(file.created_at).toLocaleString()}</td>
