@@ -487,6 +487,118 @@
                 opacity: 0;
             }
         }
+
+        /* Text Popup Modal */
+        .text-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 14, 39, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+            padding: 2rem;
+        }
+
+        .text-modal {
+            background: var(--surface);
+            border: var(--border) solid var(--accent);
+            box-shadow: 8px 8px 0 var(--accent);
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+
+        .text-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-bottom: 3px solid var(--bg);
+        }
+
+        .text-modal-header h3 {
+            color: var(--bg);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .text-modal-close {
+            background: var(--bg);
+            border: 2px solid var(--bg);
+            color: var(--primary);
+            width: 36px;
+            height: 36px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .text-modal-close:hover {
+            background: var(--error);
+            color: var(--text);
+        }
+
+        .text-modal-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .text-modal-content pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .text-modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 2px solid rgba(0, 212, 255, 0.2);
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-view-text {
+            background: var(--accent);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            box-shadow: 2px 2px 0 var(--bg);
+        }
+
+        .btn-view-text:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0 var(--bg);
+        }
+
+        .text-cell-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .text-cell-wrapper .text-preview {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
 
@@ -671,6 +783,9 @@
                 const response = await fetch(`${API_URL}/files`);
                 const files = await response.json();
 
+                // Store files data for popup access
+                filesData = files;
+
                 const tbody = document.getElementById('filesTable');
 
                 if (files.length === 0) {
@@ -678,10 +793,19 @@
                     return;
                 }
 
-                tbody.innerHTML = files.map(file => {
+                tbody.innerHTML = files.map((file, index) => {
+                    // Escape text for HTML attribute and display
+                    const escapedText = escapeHtml(file.text);
+                    const truncatedText = file.text.length > 50 ? file.text.substring(0, 50) + '...' : file.text;
+
                     return `
                     <tr>
-                        <td class="text-cell" title="${file.text}">${file.text}</td>
+                        <td>
+                            <div class="text-cell-wrapper">
+                                <span class="text-preview" title="${escapedText}">${escapeHtml(truncatedText)}</span>
+                                <button class="btn btn-small btn-view-text" onclick="showTextPopup(${index})">👁️ View</button>
+                            </div>
+                        </td>
                         <td><span class="status status-${file.status}">${file.status.replace('_', ' ')}</span></td>
                         <td>
                             ${file.status === 'completed' && file.output_file ?
@@ -726,6 +850,70 @@
             setTimeout(() => {
                 notification.remove();
             }, 4000);
+        }
+
+        // Store files data for popup access
+        let filesData = [];
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Show text popup
+        function showTextPopup(index) {
+            const file = filesData[index];
+            if (!file) return;
+
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'text-modal-overlay';
+            overlay.onclick = (e) => {
+                if (e.target === overlay) overlay.remove();
+            };
+
+            // Create modal content
+            overlay.innerHTML = `
+                <div class="text-modal">
+                    <div class="text-modal-header">
+                        <h3>📝 Full Text</h3>
+                        <button class="text-modal-close" onclick="this.closest('.text-modal-overlay').remove()">✕</button>
+                    </div>
+                    <div class="text-modal-content">
+                        <pre>${escapeHtml(file.text)}</pre>
+                    </div>
+                    <div class="text-modal-footer">
+                        <button class="btn btn-small btn-secondary" onclick="copyTextToClipboard(${index})">📋 Copy Text</button>
+                        <button class="btn btn-small" onclick="this.closest('.text-modal-overlay').remove()">Close</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            // Close on Escape key
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+        }
+
+        // Copy text to clipboard
+        function copyTextToClipboard(index) {
+            const file = filesData[index];
+            if (!file) return;
+
+            navigator.clipboard.writeText(file.text).then(() => {
+                showNotification('Text copied to clipboard! 📋');
+            }).catch((err) => {
+                console.error('Failed to copy:', err);
+                showNotification('Failed to copy text', 'error');
+            });
         }
     </script>
 </body>
