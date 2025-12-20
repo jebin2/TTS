@@ -11,10 +11,86 @@ class KokoroTTSProcessor(BaseTTS):
 		self.default_voice_index = 8
 		self.default_speed = 1
 		self.voices = [
-			'af',  # Default voice is a 50-50 mix of Bella & Sarah
-			'af_bella', 'af_sarah', 'am_adam', 'am_michael',
-			'bf_emma', 'bf_isabella', 'bm_george', 'bm_lewis',
-			'af_nicole', 'af_sky', 'af_heart', 'am_echo'
+			# Default / mixed
+			'af',
+
+			# af_*
+			'af_alloy',
+			'af_aoede',
+			'af_bella',
+			'af_heart',
+			'af_jessica',
+			'af_kore',
+			'af_nicole',
+			'af_nova',
+			'af_river',
+			'af_sarah',
+			'af_sky',
+
+			# am_*
+			'am_adam',
+			'am_echo',
+			'am_eric',
+			'am_fenrir',
+			'am_liam',
+			'am_michael',
+			'am_onyx',
+			'am_puck',
+			'am_santa',
+
+			# bf_*
+			'bf_alice',
+			'bf_emma',
+			'bf_isabella',
+			'bf_lily',
+
+			# bm_*
+			'bm_daniel',
+			'bm_fable',
+			'bm_george',
+			'bm_lewis',
+
+			# ef / em
+			'ef_dora',
+			'em_alex',
+			'em_santa',
+
+			# ff
+			'ff_siwis',
+
+			# hf / hm
+			'hf_alpha',
+			'hf_beta',
+			'hm_omega',
+			'hm_psi',
+
+			# if / im
+			'if_sara',
+			'im_nicola',
+
+			# jf / jm (Japanese)
+			'jf_alpha',
+			'jf_gongitsune',
+			'jf_nezumi',
+			'jf_tebukuro',
+			'jm_kumo',
+
+			# pf / pm
+			'pf_dora',
+			'pm_alex',
+			'pm_santa',
+
+			# zh female
+			'zf_xiaobei',
+			'zf_xiaoni',
+			'zf_xiaoxiao',
+			'zf_xiaoyi',
+
+			# zh male
+			'zm_yunjian',
+			'zm_yunxi',
+			'zm_yunxia',
+			'zm_yunyang',
 		]
 		print("Initialising Kokoro...")
 		from kokoro import KPipeline
