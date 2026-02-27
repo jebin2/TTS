@@ -347,6 +347,54 @@ def get_files():
     
     return jsonify(files)
 
+@app.route('/api/files/<task_id>', methods=['GET'])
+def get_file(task_id):
+    conn = sqlite3.connect('tts_tasks.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute('SELECT * FROM tasks WHERE id = ?', (task_id,))
+    row = c.fetchone()
+    
+    if row is None:
+        conn.close()
+        return jsonify({'error': 'Task not found'}), 404
+        
+    # Get queue order for not_started tasks (oldest first = position 1)
+    c.execute('''SELECT id FROM tasks 
+                 WHERE status = 'not_started' 
+                 ORDER BY created_at ASC''')
+    queue_order = [r['id'] for r in c.fetchall()]
+    
+    # Check if any task is currently processing
+    c.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "processing"')
+    processing_count = c.fetchone()['count']
+    
+    conn.close()
+    
+    # Average processing time in seconds
+    AVG_PROCESSING_TIME = 30
+    
+    file_data = {
+        'id': row['id'],
+        'text': row['text'],
+        'status': row['status'],
+        'output_file': row['output_file'],
+        'created_at': row['created_at'],
+        'processed_at': row['processed_at'],
+        'error': row['error'],
+        'progress': row['progress'] or 0,
+        'progress_text': row['progress_text']
+    }
+    
+    # Add queue position for not_started tasks
+    if row['status'] == 'not_started' and row['id'] in queue_order:
+        queue_position = queue_order.index(row['id']) + 1  # 1-indexed
+        file_data['queue_position'] = queue_position
+        tasks_ahead = queue_position - 1 + processing_count
+        file_data['estimated_start_seconds'] = tasks_ahead * AVG_PROCESSING_TIME
+        
+    return jsonify(file_data)
+
 @app.route('/api/download/<task_id>', methods=['GET'])
 def download_file(task_id):
     conn = sqlite3.connect('tts_tasks.db')
