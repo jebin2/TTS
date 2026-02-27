@@ -2,4 +2,4 @@ Flask==3.0.0
 flask-cors==4.0.0
 werkzeug==3.0.1
 
-git+https://github.com/jebin2/TTS.git#egg=tts-runner[kokoro]
+git+https://github.com/jebin2/TTS.git#egg=tts-runner[chatterbox]

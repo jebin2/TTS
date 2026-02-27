@@ -145,7 +145,7 @@ def worker_loop():
                     print(f"🔄 Running TTS...")
                     command = [
                         PYTHON_PATH, "-m", "tts_runner.runner",
-                        "--model", "kokoro",
+                        "--model", "chatterbox",
                         "--voice", str(voice),
                         "--speed", str(speed)
                     ]
