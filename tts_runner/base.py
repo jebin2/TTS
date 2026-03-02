@@ -59,7 +59,8 @@ class BaseTTS:
 			os.path.join(base_dir, 'voices/voice_preview_david castlemore - newsreader and educator.mp3'),
 			os.path.join(base_dir, 'voices/voice_preview_kelly - storytelling & motivational content.mp3'),
 			os.path.join(base_dir, 'voices/voice_preview_motivational coach - leader.mp3'),
-			os.path.join(base_dir, 'voices/voice_preview_sevan bomar - black motivational speaker.mp3',)
+			os.path.join(base_dir, 'voices/voice_preview_sevan bomar - black motivational speaker.mp3'),
+			os.path.join(base_dir, 'voices/voice_preview_female news reader.mp3'),
 		]
 		
 		# General settings
