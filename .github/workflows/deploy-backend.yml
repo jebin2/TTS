@@ -99,6 +99,7 @@ jobs:
         run: |
           cd hf-space
           git lfs install
+          git add -A
           git lfs track "*.wav" "*.mp3" "*.flac" "*.pth" "*.bin"
           git add .gitattributes
 
