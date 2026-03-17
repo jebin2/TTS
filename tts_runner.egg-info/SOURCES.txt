@@ -31,6 +31,7 @@ tts_runner/voices/kratos(ambient)_en.wav
 tts_runner/voices/voice_preview_cocky male villain voice.mp3
 tts_runner/voices/voice_preview_cocky male villain voice.mp3:Zone.Identifier
 tts_runner/voices/voice_preview_david castlemore - newsreader and educator.mp3
+tts_runner/voices/voice_preview_female news reader.mp3
 tts_runner/voices/voice_preview_kelly - storytelling & motivational content.mp3
 tts_runner/voices/voice_preview_motivational coach - leader.mp3
 tts_runner/voices/voice_preview_sevan bomar - black motivational speaker.mp3

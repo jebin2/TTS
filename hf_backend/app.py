@@ -123,7 +123,7 @@ def worker_loop():
             if row:
                 task_id = row['id']
                 text = row['text']
-                voice = row['voice'] or '9' # Default voice index (bm_lewis)
+                voice = row['voice'] or '4' # Default voice index (American Male)
                 speed = row['speed'] or 1.0
                 
                 # Run cleanup before processing each task
@@ -270,7 +270,7 @@ def generate_audio():
         return jsonify({'error': 'No text provided'}), 400
     
     text = data['text']
-    voice = data.get('voice', '9')
+    voice = data.get('voice', '4')
     speed = data.get('speed', 1.0)
     hide_from_ui = 1 if data.get('hide_from_ui') else 0
     

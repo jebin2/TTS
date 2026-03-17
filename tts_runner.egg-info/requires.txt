@@ -7,11 +7,11 @@ scipy
 
 [all]
 peft
-soundfile
 kittentts
-chatterbox-tts
-kokoro>=0.9.4
 spacy
+kokoro>=0.9.4
+soundfile
+chatterbox-tts
 
 [chatterbox]
 chatterbox-tts
