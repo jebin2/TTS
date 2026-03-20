@@ -42,8 +42,8 @@ class BaseTTS:
 			self.temp_output_dir.mkdir(parents=True, exist_ok=True)
 		
 		# Voice and speed configuration
-		self.default_voice_index = 8
-		self.default_speed = 0.8
+		self.default_voice_index = 4
+		self.default_speed = 1.0
 
 		self.voices = [
 			None,
