@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tts-runner-backend"
+version = "2.0.0"
+description = "FastAPI backend for TTS Runner"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "aiosqlite",
+    "aiofiles",
+    "python-multipart",
+    "custom_logger @ git+https://github.com/jebin2/custom_logger.git",
+    "tts-runner[chatterbox] @ git+https://github.com/jebin2/TTS.git"
+]
+
+[project.scripts]
+tts-backend = "app.main:app"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["uploads*", "temp_dir*"]

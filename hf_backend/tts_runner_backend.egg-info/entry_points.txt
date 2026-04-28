@@ -1,0 +1,2 @@
+[console_scripts]
+tts-backend = app.main:app

@@ -1,21 +1,39 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: tts-runner
 Version: 1.0.0
 Summary: A flexible, multi-engine Text-to-Speech runner with TUI
-Home-page: https://github.com/jebin2/TTS
-Author: Jebin Einstein
-Author-email: jebin@gmail.com
+Author-email: Jebin Einstein <jebineinstein@gmail.com>
+License: MIT
+Project-URL: Homepage, https://github.com/jebin2/TTS
 Classifier: Programming Language :: Python :: 3
-Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Classifier: Topic :: Multimedia :: Sound/Audio :: Speech
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: torch
+Requires-Dist: pydub
+Requires-Dist: sounddevice
+Requires-Dist: python-dotenv
+Requires-Dist: scipy
 Provides-Extra: chatterbox
+Requires-Dist: chatterbox-tts; extra == "chatterbox"
+Requires-Dist: spacy; extra == "chatterbox"
+Requires-Dist: peft; extra == "chatterbox"
 Provides-Extra: kitten
+Requires-Dist: kittentts; extra == "kitten"
+Requires-Dist: spacy; extra == "kitten"
 Provides-Extra: kokoro
+Requires-Dist: kokoro>=0.9.4; extra == "kokoro"
+Requires-Dist: soundfile; extra == "kokoro"
 Provides-Extra: all
+Requires-Dist: chatterbox-tts; extra == "all"
+Requires-Dist: spacy; extra == "all"
+Requires-Dist: peft; extra == "all"
+Requires-Dist: kittentts; extra == "all"
+Requires-Dist: kokoro>=0.9.4; extra == "all"
+Requires-Dist: soundfile; extra == "all"
 
 # TTS-Engine-Runner
 

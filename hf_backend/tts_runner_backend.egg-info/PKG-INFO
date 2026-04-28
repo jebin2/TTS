@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: tts-runner-backend
+Version: 2.0.0
+Summary: FastAPI backend for TTS Runner
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: aiosqlite
+Requires-Dist: aiofiles
+Requires-Dist: python-multipart
+Requires-Dist: custom_logger @ git+https://github.com/jebin2/custom_logger.git
+Requires-Dist: tts-runner[chatterbox] @ git+https://github.com/jebin2/TTS.git

@@ -6,12 +6,12 @@ python-dotenv
 scipy
 
 [all]
-soundfile
-kittentts
-spacy
-kokoro>=0.9.4
-peft
 chatterbox-tts
+spacy
+peft
+kittentts
+kokoro>=0.9.4
+soundfile
 
 [chatterbox]
 chatterbox-tts

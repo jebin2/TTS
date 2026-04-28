@@ -63,7 +63,7 @@ jobs:
         run: |
           cat > hf-space/README.md << 'EOF'
           ---
-          title: TTS Text-to-Speech Generator
+          title: TTS Text-to-Speech
           emoji: 🎵
           colorFrom: blue
           colorTo: purple
@@ -72,12 +72,12 @@ jobs:
           license: mit
           ---
 
-          # TTS Text-to-Speech Generator
+          # TTS Text-to-Speech
 
           A Python-based text-to-speech service with a neobrutalist web interface.
 
           ## Features
-          - 📝 Text-to-Speech generation
+          - 📝 Text-to-Speech
           - 🤖 Multiple voices and speeds
           - 💾 SQLite database for queue management
           - 🎨 Neobrutalist UI with smooth animations

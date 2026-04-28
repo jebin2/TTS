@@ -1,6 +1,5 @@
-MANIFEST.in
 README.md
-setup.py
+pyproject.toml
 tts_runner/__init__.py
 tts_runner/base.py
 tts_runner/common.py

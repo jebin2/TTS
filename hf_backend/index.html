@@ -2,987 +2,1041 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTS Generator</title>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TTS - Text-to-Speech</title>
+
+    <!-- External Assets -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Caveat:wght@400..700&display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+
+    <!-- Tailwind Configuration -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        surface: "#e6f0fd",
+                        "crayon-blue": "#2563eb",
+                        "crayon-red": "#dc2626",
+                        "crayon-green": "#16a34a",
+                        "crayon-yellow": "#ca8a04",
+                        "crayon-orange": "#ea580c",
+                        "crayon-purple": "#7c3aed",
+                        "crayon-dark": "#1A1A1A"
+                    },
+                    fontFamily: {
+                        "fredoka": ["Fredoka", "sans-serif"],
+                        "caveat": ["Caveat", "cursive"]
+                    },
+                    fontSize: {
+                        "headline-lg": ["42px", { lineHeight: "1.1", fontWeight: "700" }],
+                        "headline-md": ["28px", { lineHeight: "1.2", fontWeight: "600" }],
+                        "body-lg": ["24px", { lineHeight: "1.5", fontWeight: "500" }],
+                        "label-sm": ["18px", { lineHeight: "1.2", letterSpacing: "0.01em", fontWeight: "500" }],
+                        "body-md": ["20px", { lineHeight: "1.5", fontWeight: "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+
+    <svg height="0" style="position: absolute;" width="0">
+        <filter height="120%" id="crayon-texture" width="120%" x="-10%" y="-10%">
+            <feTurbulence baseFrequency="0.4" numOctaves="3" result="noise" type="fractalNoise"></feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G">
+            </feDisplacementMap>
+        </filter>
+        <filter height="120%" id="crayon-heavy" width="120%" x="-10%" y="-10%">
+            <feTurbulence baseFrequency="0.5" numOctaves="4" result="noise" type="fractalNoise"></feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G">
+            </feDisplacementMap>
+        </filter>
+    </svg>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg: #0a0e27;
-            --surface: #141b3d;
-            --primary: #00ff88;
-            --secondary: #ff00ff;
-            --accent: #00d4ff;
-            --error: #ff1744;
-            --text: #ffffff;
-            --border: 4px;
-        }
-
+        /* Sketchbook Styles */
         body {
-            font-family: 'Space Grotesk', 'Courier New', monospace;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
+            background-color: #e6f0fd;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+            color: #1A1A1A;
+            font-family: 'Fredoka', sans-serif;
         }
 
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background:
-                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
+        .bg-surface {
+            background-color: rgb(255 255 255 / 0%) !important;
+            backdrop-filter: blur(2px);
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-            position: relative;
-            z-index: 1;
+        .crayon-filter {
+            filter: url('#crayon-texture');
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 3rem;
-            animation: slideDown 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        .crayon-heavy {
+            filter: url('#crayon-heavy');
         }
 
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .crayon-border-green {
+            border: 4px solid #16a34a;
+            border-radius: 12px 8px 15px 10px / 8px 14px 10px 12px;
+            filter: url('#crayon-texture');
         }
 
-        h1 {
-            font-size: clamp(2rem, 5vw, 4rem);
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 50%, var(--secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-transform: uppercase;
-            letter-spacing: -2px;
-            margin-bottom: 1rem;
-            position: relative;
-            display: inline-block;
+        .task-card {
+            border: 3px solid rgba(124, 58, 237, 0.4);
+            border-radius: 20px 15px 25px 18px / 18px 25px 15px 20px;
+            filter: url('#crayon-texture');
         }
 
-        h1::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60%;
-            height: 6px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-            animation: glow 2s ease-in-out infinite;
+        .crayon-border-blue {
+            border: 4px dashed #2563eb;
+            border-radius: 15px 10px 12px 18px / 12px 18px 15px 10px;
+            filter: url('#crayon-texture');
         }
 
-        @keyframes glow {
-
-            0%,
-            100% {
-                opacity: 0.5;
-            }
-
-            50% {
-                opacity: 1;
-            }
+        .crayon-border-purple {
+            border: 4px solid #7c3aed;
+            border-radius: 10px 16px 12px 14px / 16px 12px 14px 10px;
+            filter: url('#crayon-texture');
         }
 
-        .subtitle {
-            font-size: 1.2rem;
-            color: var(--accent);
-            letter-spacing: 2px;
-        }
-
-        .input-section {
-            background: var(--surface);
-            border: var(--border) solid var(--primary);
-            box-shadow: 8px 8px 0 var(--primary);
-            padding: 2rem;
-            margin-bottom: 3rem;
-            position: relative;
-            transition: all 0.3s ease;
-            animation: slideUp 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.2s both;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .input-section:hover {
-            transform: translate(-2px, -2px);
-            box-shadow: 12px 12px 0 var(--primary);
-        }
-
-        textarea {
-            width: 100%;
-            height: 150px;
-            background: rgba(0, 212, 255, 0.05);
-            border: 3px solid var(--accent);
-            color: var(--text);
-            padding: 1rem;
-            font-family: inherit;
-            font-size: 1.1rem;
-            resize: vertical;
-            margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: rgba(0, 255, 136, 0.05);
-        }
-
-        .controls {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .control-group {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--accent);
-            font-weight: bold;
-        }
-
-        select,
-        input[type="number"] {
-            width: 100%;
-            padding: 0.8rem;
-            background: var(--bg);
-            border: 2px solid var(--accent);
-            color: var(--text);
-            font-family: inherit;
-            font-size: 1rem;
-        }
-
-        .btn {
-            background: var(--primary);
-            color: var(--bg);
-            border: var(--border) solid var(--bg);
-            padding: 1rem 2rem;
-            font-size: 1.1rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            cursor: pointer;
+        .crayon-button {
+            border: 4px solid #2563eb;
+            border-radius: 12px 8px 14px 10px / 8px 14px 10px 12px;
             transition: all 0.2s ease;
-            box-shadow: 4px 4px 0 var(--bg);
-            letter-spacing: 1px;
-            position: relative;
-            width: 100%;
-        }
-
-        .btn:hover:not(:disabled) {
-            transform: translate(-2px, -2px);
-            box-shadow: 6px 6px 0 var(--bg);
-        }
-
-        .btn:active:not(:disabled) {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0 var(--bg);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: var(--accent);
-        }
-
-        .btn-small {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-            box-shadow: 3px 3px 0 var(--bg);
-            text-decoration: none;
-            display: inline-block;
-            color: var(--bg);
-        }
-
-        .btn-small:hover:not(:disabled) {
-            box-shadow: 4px 4px 0 var(--bg);
-            transform: translate(-2px, -2px);
-        }
-
-        .table-section {
-            animation: slideUp 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.4s both;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-            background: var(--surface);
-            border: var(--border) solid var(--secondary);
-            box-shadow: 8px 8px 0 var(--secondary);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        thead {
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-        }
-
-        th {
-            padding: 1.5rem 1rem;
-            text-align: left;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--bg);
-            border-right: 3px solid var(--bg);
-        }
-
-        th:last-child {
-            border-right: none;
-        }
-
-        tbody tr {
-            border-bottom: 2px solid rgba(0, 212, 255, 0.2);
-            transition: all 0.3s ease;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        tbody tr:hover {
-            background: rgba(0, 255, 136, 0.1);
-        }
-
-        td {
-            padding: 1.5rem 1rem;
-            color: var(--text);
-        }
-
-        .status {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            border: 3px solid;
-            font-weight: 900;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 1px;
-        }
-
-        .status-not_started {
-            background: var(--bg);
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .status-processing {
-            background: var(--bg);
-            border-color: var(--primary);
-            color: var(--primary);
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.6;
-            }
-        }
-
-        .status-completed {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: var(--bg);
-        }
-
-        .status-failed {
-            background: var(--error);
-            border-color: var(--error);
-            color: var(--text);
-        }
-
-        /* Progress display */
-        .status-progress {
-            display: flex;
-            flex-direction: column;
-            gap: 0.3rem;
-            min-width: 120px;
-        }
-
-        .progress-bar-container {
-            width: 100%;
-            height: 6px;
-            background: rgba(0, 212, 255, 0.2);
-            border: 1px solid var(--accent);
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            transition: width 0.3s ease;
-            animation: progressPulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes progressPulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
-            }
-        }
-
-        .progress-text {
-            font-size: 0.7rem;
-            color: var(--accent);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .text-cell {
-            max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--accent);
-            font-size: 1.2rem;
-        }
-
-        .refresh-btn {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--secondary);
-            border: var(--border) solid var(--bg);
-            box-shadow: 4px 4px 0 var(--bg);
+            filter: url('#crayon-texture');
             cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            z-index: 1000;
         }
 
-        .refresh-btn:hover {
-            transform: rotate(180deg) scale(1.1);
-            box-shadow: 6px 6px 0 var(--bg);
+        .crayon-button:hover {
+            transform: scale(1.05) rotate(1deg);
+            box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.1);
         }
 
-        /* Loader styles */
-        .loader-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10, 14, 39, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .loader {
-            width: 80px;
-            height: 80px;
-            border: 6px solid var(--surface);
-            border-top: 6px solid var(--primary);
-            border-right: 6px solid var(--accent);
-            border-bottom: 6px solid var(--secondary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .crayon-button:hover .material-symbols-outlined.spin-on-hover {
+            animation: spin 2s linear infinite;
         }
 
         @keyframes spin {
-            0% {
+            from {
                 transform: rotate(0deg);
             }
 
-            100% {
+            to {
                 transform: rotate(360deg);
             }
         }
 
-        .loader-text {
-            position: absolute;
-            margin-top: 120px;
-            font-size: 1.2rem;
-            font-weight: 900;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-
-            .input-section,
-            .table-wrapper {
-                box-shadow: 4px 4px 0 var(--primary);
-            }
-
-            th,
-            td {
-                padding: 1rem 0.5rem;
-                font-size: 0.9rem;
-            }
-
-            .text-cell {
-                max-width: 150px;
-            }
-        }
-
-        .notification {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            padding: 1.5rem 2rem;
-            background: var(--primary);
-            color: var(--bg);
-            border: var(--border) solid var(--bg);
-            box-shadow: 6px 6px 0 var(--bg);
-            font-weight: 900;
-            z-index: 2000;
-            animation: slideInRight 0.5s ease, slideOutRight 0.5s ease 3.5s;
-        }
-
-        @keyframes slideInRight {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-
-            to {
+        @keyframes drift {
+            0% {
                 transform: translateX(0);
-                opacity: 1;
+            }
+
+            50% {
+                transform: translateX(20px);
+            }
+
+            100% {
+                transform: translateX(0);
             }
         }
 
-        @keyframes slideOutRight {
-            to {
-                transform: translateX(400px);
-                opacity: 0;
-            }
+        .drift-slow {
+            animation: drift 8s ease-in-out infinite;
         }
 
-        /* Text Popup Modal */
-        .text-modal-overlay {
+        .drift-medium {
+            animation: drift 5s ease-in-out infinite;
+        }
+
+        .organic-shape {
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            filter: url('#crayon-texture');
+        }
+
+        .scribble-fill-green {
+            background: repeating-linear-gradient(60deg, #16a34a, #16a34a 2px, #15803d 3px, #16a34a 4px);
+        }
+
+        .progress-fill {
+            background: repeating-linear-gradient(80deg, #2563eb, #2563eb 2px, #1d4ed8 3px, #2563eb 5px);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 48;
+            filter: url('#crayon-texture');
+        }
+
+        /* --- Modals --- */
+        .modal {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10, 14, 39, 0.95);
-            display: flex;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            display: none;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
-            animation: fadeIn 0.3s ease;
+            z-index: 100;
             padding: 2rem;
         }
 
-        .text-modal {
-            background: var(--surface);
-            border: var(--border) solid var(--accent);
-            box-shadow: 8px 8px 0 var(--accent);
-            max-width: 800px;
-            width: 100%;
-            max-height: 80vh;
+        .modal.active {
             display: flex;
-            flex-direction: column;
-            animation: slideUp 0.3s ease;
         }
 
-        .text-modal-header {
+        .modal-content {
+            border: 4px solid #2563eb;
+            width: 100%;
+            max-width: 900px;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+            box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .modal-sketch-bg {
+            position: absolute;
+            inset: -8px;
+            border: 6px solid #2563eb;
+            backdrop-filter: blur(10px);
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            z-index: -1;
+            filter: url('#crayon-texture');
+            pointer-events: none;
+        }
+
+        .modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 3px dashed #adc6ff;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 1.5rem;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-bottom: 3px solid var(--bg);
+            position: relative;
+            z-index: 10;
         }
 
-        .text-modal-header h3 {
-            color: var(--bg);
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .modal-body {
+            padding: 2rem;
+            overflow-y: auto;
+            position: relative;
+            z-index: 10;
         }
 
-        .text-modal-close {
-            background: var(--bg);
-            border: 2px solid var(--bg);
-            color: var(--primary);
-            width: 36px;
-            height: 36px;
-            font-size: 1.2rem;
+        #resultText,
+        pre {
+            border: 3px dashed #adc6ff !important;
+            padding: 2rem !important;
+            border-radius: 20px !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-size: 1.5rem !important;
+            font-weight: 600 !important;
+            color: #1A1A1A !important;
+            white-space: pre-wrap !important;
+            word-break: break-all !important;
+            line-height: 1.6 !important;
+            filter: url('#crayon-texture');
+        }
+
+        .close-modal {
+            background: transparent;
+            border: none;
+            color: #dc2626;
+            font-size: 3rem;
             cursor: pointer;
+            font-weight: 700;
+        }
+
+        .text-headline-lg {
+            filter: url('#crayon-texture');
+        }
+
+        .copy-btn {
+            background: #16a34a;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            box-shadow: 4px 4px 0px 0px #15803d;
+            transition: all 0.2s;
+            filter: url('#crayon-texture');
+        }
+
+        .copy-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #15803d;
+        }
+
+        /* --- Specific UI Elements --- */
+        .status-modal-content {
+            max-width: 450px;
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .status-modal-bg {
+            position: absolute;
+            inset: -12px;
+            border: 8px solid #2563eb;
+            background: #e6f0fd;
+            border-radius: 20px 40px 15px 35px / 35px 15px 40px 20px;
+            z-index: -1;
+            filter: url('#crayon-texture');
+            pointer-events: none;
+        }
+
+        .status-icon-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            border-radius: 20px 15px 25px 18px / 18px 25px 15px 20px;
+            border: 4px solid currentColor;
+            filter: url('#crayon-texture');
+            position: relative;
+            z-index: 20;
         }
 
-        .text-modal-close:hover {
-            background: var(--error);
-            color: var(--text);
+        .status-icon-bg {
+            position: absolute;
+            inset: 0;
+            background: currentColor;
+            opacity: 0.15;
+            z-index: -1;
+            border-radius: inherit;
         }
 
-        .text-modal-content {
-            padding: 1.5rem;
-            overflow-y: auto;
-            flex: 1;
+        .modal-decoration {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.3;
+            z-index: 5;
+            filter: url('#crayon-texture');
         }
 
-        .text-modal-content pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-family: inherit;
-            font-size: 1rem;
-            line-height: 1.6;
-            color: var(--text);
-            margin: 0;
+        .table-container::-webkit-scrollbar {
+            width: 10px;
         }
 
-        .text-modal-footer {
-            padding: 1rem 1.5rem;
-            border-top: 2px solid rgba(0, 212, 255, 0.2);
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
         }
 
-        .btn-view-text {
-            background: var(--accent);
-            padding: 0.4rem 0.8rem;
-            font-size: 0.8rem;
-            box-shadow: 2px 2px 0 var(--bg);
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+            border: 2px solid #f1f5f9;
         }
 
-        .btn-view-text:hover {
-            transform: translate(-1px, -1px);
-            box-shadow: 3px 3px 0 var(--bg);
+        .dragging {
+            border-color: #16a34a !important;
+            background-color: #f0fdf4 !important;
         }
 
-        .text-cell-wrapper {
+        textarea {
+            background: rgba(255, 255, 255, 0.4);
+            border: 4px solid #2563eb;
+            border-radius: 15px 10px 12px 18px / 12px 18px 15px 10px;
+            outline: none;
+            resize: none;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1A1A1A;
+            width: 100%;
+            height: 100%;
+            min-height: 100px;
+            padding: 1rem;
+            filter: url('#crayon-texture');
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: #7c3aed;
+            background: #fff;
+        }
+
+        select,
+        input[type="number"] {
+            background: rgba(255, 255, 255, 0.4);
+            border: 4px solid #7c3aed;
+            border-radius: 12px 8px 15px 10px / 8px 14px 10px 12px;
+            padding: 0.5rem 0.8rem;
+            font-family: 'Fredoka', sans-serif;
+            color: #1e1b4b;
+            filter: url('#crayon-texture');
+            outline: none;
+            appearance: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* --- Custom Dropdown --- */
+        .custom-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .dropdown-trigger {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.4);
+            border: 4px solid #7c3aed;
+            border-radius: 12px 8px 15px 10px / 8px 14px 10px 12px;
+            padding: 0.5rem 0.8rem;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e1b4b;
+            filter: url('#crayon-texture');
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .text-cell-wrapper .text-preview {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .dropdown-trigger:hover {
+            transform: scale(1.02) rotate(-0.5deg);
+            border-color: #2563eb;
+        }
+
+        .dropdown-popup {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            background: #fff;
+            border: 4px solid #7c3aed;
+            border-radius: 15px 25px 18px 22px / 22px 18px 25px 15px;
+            z-index: 150;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            max-height: 200px;
+            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.1);
+            filter: url('#crayon-texture');
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .dropdown-popup::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .dropdown-popup::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .dropdown-popup::-webkit-scrollbar-thumb {
+            background: #adc6ff;
+            border-radius: 10px;
+        }
+
+        .dropdown-popup.active {
+            display: flex;
+        }
+
+        .dropdown-group {
+            padding: 0.3rem 0.8rem;
+            background: #e6f0fd;
+            color: #7c3aed;
+            border-bottom: 2px dashed #adc6ff;
+        }
+
+        .dropdown-option {
+            padding: 0.8rem 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .dropdown-option:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-option:hover {
+            background: #f5f3ff;
+            color: #7c3aed;
+            padding-left: 1.5rem;
+        }
+
+        .dropdown-option.selected {
+            background: #e6f0fd;
+            color: #2563eb;
+        }
+
+        audio {
+            width: 100%;
+            height: 50px;
+            border-radius: 12px;
+            filter: url('#crayon-texture');
         }
     </style>
 </head>
 
-<body>
-    <div class="container">
-        <header>
-            <h1>TTS Generator</h1>
-            <p class="subtitle">Text • Process • Audio</p>
-        </header>
+<body class="h-screen flex flex-col overflow-hidden relative">
+    <!-- Main Background Decorations -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10 opacity-40">
+        <!-- Stars -->
+        <span
+            class="material-symbols-outlined absolute text-5xl text-crayon-yellow top-20 left-[10%] rotate-12 crayon-heavy animate-pulse">star</span>
+        <span
+            class="material-symbols-outlined absolute text-3xl text-crayon-orange top-[40%] left-[5%] -rotate-12 crayon-filter">star</span>
+        <span
+            class="material-symbols-outlined absolute text-4xl text-crayon-yellow bottom-[20%] left-[15%] rotate-45 animate-pulse">star</span>
+        <span
+            class="material-symbols-outlined absolute text-6xl text-crayon-orange top-[15%] right-[15%] rotate-[-15deg] crayon-heavy">star</span>
+        <span
+            class="material-symbols-outlined absolute text-3xl text-crayon-yellow bottom-[30%] right-[10%] rotate-12 animate-pulse">star</span>
 
-        <div class="input-section">
-            <h2 style="margin-bottom: 1.5rem; color: var(--primary);">Generate Audio</h2>
+        <!-- Clouds -->
+        <span
+            class="material-symbols-outlined absolute text-[120px] text-crayon-blue top-[10%] left-[25%] opacity-20 drift-slow">cloud</span>
+        <span
+            class="material-symbols-outlined absolute text-[80px] text-crayon-purple bottom-[15%] left-[40%] opacity-10 drift-medium">cloud</span>
+        <span
+            class="material-symbols-outlined absolute text-[100px] text-crayon-blue top-[60%] right-[25%] opacity-15 drift-slow">cloud</span>
+        <span
+            class="material-symbols-outlined absolute text-[150px] text-crayon-purple top-[30%] right-[5%] opacity-10 drift-medium">cloud</span>
 
-            <textarea id="textInput" placeholder="Enter text to convert to speech..."></textarea>
+        <!-- Hearts -->
+        <span
+            class="material-symbols-outlined absolute text-4xl text-crayon-red top-[25%] left-[18%] rotate-[-15deg] crayon-filter animate-pulse">favorite</span>
+        <span
+            class="material-symbols-outlined absolute text-2xl text-crayon-red bottom-[10%] right-[20%] rotate-12 crayon-filter">favorite</span>
+        <span
+            class="material-symbols-outlined absolute text-5xl text-crayon-red top-[70%] left-[8%] rotate-[10deg] animate-pulse">favorite</span>
+    </div>
 
-            <div class="controls">
-                <div class="control-group">
-                    <label>Voice</label>
-                    <select id="voiceSelect">
-                        <!-- Chatterbox Voice References (indices match base.py) -->
-                        <optgroup label="Female Voices">
-                            <option value="1">Main</option>
-                            <option value="2">Ellen</option>
-                            <option value="5">Ellen (Young)</option>
-                            <option value="9">English Woman</option>
-                            <option value="11">Kelly - Storytelling</option>
-                            <option value="14">Female News Reader</option>
-                        </optgroup>
-
-                        <optgroup label="Male Voices">
-                            <option value="3">Kratos</option>
-                            <option value="4" selected>American Male</option>
-                            <option value="6">Simple Guy</option>
-                            <option value="8">BBC News</option>
-                            <option value="10">David Castlemore - Newsreader</option>
-                            <option value="12">Motivational Coach</option>
-                            <option value="13">Sevan Bomar - Motivational</option>
-                        </optgroup>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>Speed</label>
-                    <input type="number" id="speedInput" value="1.0" step="0.1" min="0.5" max="2.0">
-                </div>
+    <!-- Header -->
+    <header
+        class="bg-surface flex justify-between items-center w-[calc(100%-48px)] mx-6 mt-6 px-8 py-5 crayon-border-green z-10 shrink-0 organic-shape shadow-sm">
+        <div class="flex items-center gap-5">
+            <div
+                class="bg-crayon-green text-white w-14 h-14 rounded-2xl flex items-center justify-center border-[3px] border-crayon-green rotate-[-4deg] crayon-filter scribble-fill-green shadow-md">
+                <span class="material-symbols-outlined text-4xl">record_voice_over</span>
             </div>
-
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <button class="btn" id="generateBtn" style="flex: 1; min-width: 200px;">
-                    🚀 Generate Audio
-                </button>
-                <button class="btn btn-secondary" id="uploadBtn" style="flex: 1; min-width: 200px;">
-                    📁 Upload File
-                </button>
-                <input type="file" id="fileInput" accept=".txt,.md,.text" style="display: none;">
+            <div class="flex flex-col -rotate-1">
+                <h1 class="text-headline-lg text-[#4c1d95] leading-none mb-1">TTS</h1>
+                <span class="text-label-sm text-[#4b5563] font-bold">Text-to-Speech</span>
             </div>
         </div>
 
-        <div class="table-section">
-            <h2 style="margin-bottom: 1.5rem; color: var(--secondary);">Processing Queue</h2>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Text</th>
-                            <th>Status</th>
-                            <th>Audio</th>
-                            <th>Created</th>
-                            <th>Processed</th>
-                        </tr>
-                    </thead>
-                    <tbody id="filesTable">
-                        <tr>
-                            <td colspan="5" class="empty-state">No tasks yet. Start by generating audio!
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="flex items-center gap-10 relative">
+            <div class="absolute -left-48 top-2 rotate-12 crayon-heavy">
+                <span class="material-symbols-outlined text-4xl text-crayon-yellow">star</span>
+            </div>
+            <div class="absolute -left-24 top-0 -rotate-6 crayon-heavy opacity-80">
+                <span class="material-symbols-outlined text-5xl text-crayon-blue">cloud</span>
+            </div>
+            <button id="apiDocBtn"
+                class="flex items-center gap-2 text-headline-md text-crayon-purple px-8 py-3 bg-surface crayon-button rotate-1 shadow-md">
+                <span class="material-symbols-outlined text-3xl">menu_book</span>
+                API DOC
+            </button>
+            <div
+                class="flex items-center gap-4 bg-surface px-6 py-3 rounded-full border-[4px] border-crayon-green organic-shape shadow-md">
+                <div id="healthDot" class="w-4 h-4 rounded-full bg-crayon-green shadow-[0_0_12px_rgba(22,163,74,0.5)]">
+                </div>
+                <span id="healthText" class="text-headline-md text-crayon-green text-2xl">Service Online</span>
+                <div class="text-crayon-orange flex items-center justify-center rotate-[15deg]">
+                    <span class="material-symbols-outlined text-4xl">light_mode</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden p-8 gap-8 mx-auto w-full relative">
+        <!-- Input Section -->
+        <section class="w-[350px] flex flex-col gap-8">
+            <div
+                class="flex flex-col gap-4 p-6 bg-surface crayon-border-blue flex-1 relative organic-shape shadow-sm hover:shadow-md transition-shadow overflow-y-auto table-container">
+                <div class="flex items-center gap-4 mb-2 rotate-1">
+                    <div
+                        class="bg-crayon-blue text-white rounded-full w-12 h-12 flex items-center justify-center border-2 border-crayon-blue crayon-filter shadow-md">
+                        <span class="material-symbols-outlined text-3xl">edit_note</span>
+                    </div>
+                    <div>
+                        <h2 class="text-headline-md text-crayon-blue leading-none mb-1 flex items-center gap-2">
+                            INPUT
+                            <span class="material-symbols-outlined text-crayon-red text-xl rotate-12">favorite</span>
+                        </h2>
+                        <p class="text-label-sm text-[#6b7280]">Type or upload text</p>
+                    </div>
+                </div>
+
+                <div class="flex-1 flex flex-col gap-4">
+                    <div class="flex-1 min-h-[120px]">
+                        <textarea id="textInput" placeholder="Enter text to speak..."></textarea>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-label-sm font-bold text-crayon-purple">VOICE</label>
+                        <div class="custom-dropdown" id="voiceDropdown">
+                            <div class="dropdown-trigger" id="voiceTrigger">
+                                <span id="selectedVoice">American Male</span>
+                                <span class="material-symbols-outlined">expand_more</span>
+                            </div>
+                            <div class="dropdown-popup" id="voicePopup">
+                                <div class="dropdown-group">Female</div>
+                                <div class="dropdown-option" data-value="1">Main</div>
+                                <div class="dropdown-option" data-value="2">Ellen</div>
+                                <div class="dropdown-option" data-value="5">Ellen (Young)</div>
+                                <div class="dropdown-option" data-value="9">British Woman</div>
+                                <div class="dropdown-option" data-value="11">Kelly (Story)</div>
+                                <div class="dropdown-option" data-value="14">News Female</div>
+                                <div class="dropdown-group">Male</div>
+                                <div class="dropdown-option" data-value="3">Kratos</div>
+                                <div class="dropdown-option selected" data-value="4">American Male</div>
+                                <div class="dropdown-option" data-value="6">Simple Guy</div>
+                                <div class="dropdown-option" data-value="8">BBC News</div>
+                                <div class="dropdown-option" data-value="10">David (News)</div>
+                                <div class="dropdown-option" data-value="12">Coach</div>
+                                <div class="dropdown-option" data-value="13">Motivational</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="voiceSelect" value="4">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-label-sm font-bold text-crayon-purple">SPEED</label>
+                        <input type="number" id="speedInput" value="1.0" step="0.1" min="0.5" max="2.0">
+                    </div>
+
+                    <button id="generateBtn"
+                        class="crayon-button bg-crayon-blue text-white py-3 text-headline-md mt-2 flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-3xl">rocket_launch</span>
+                        GENERATE
+                    </button>
+
+                    <div class="text-center py-2">
+                        <span class="text-label-sm text-[#94a3b8] font-bold">OR</span>
+                        <div id="uploadZone"
+                            class="mt-2 py-3 border-[3px] border-dashed border-crayon-green rounded-xl cursor-pointer hover:bg-green-50 transition-colors">
+                            <p class="text-label-sm text-crayon-green font-bold flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined">upload_file</span>
+                                Upload .txt
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <input type="file" id="fileInput" hidden accept=".txt,.md,.text">
+            </div>
+        </section>
+
+        <!-- Activity Section -->
+        <section
+            class="flex-1 flex flex-col bg-surface crayon-border-purple p-8 relative organic-shape overflow-hidden shadow-sm">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-4 rotate-1">
+                    <div
+                        class="bg-crayon-purple text-white rounded-full w-14 h-14 flex items-center justify-center border-[3px] border-crayon-purple shadow-md">
+                        <span class="material-symbols-outlined text-4xl">schedule</span>
+                    </div>
+                    <div>
+                        <h2 class="text-headline-lg text-[#4c1d95] leading-none mb-1">ACTIVITY</h2>
+                        <p class="text-label-sm text-[#6b7280] font-bold">Recent speech generations</p>
+                    </div>
+                </div>
+                <button onclick="loadTasks()"
+                    class="flex items-center gap-2 text-headline-md text-crayon-blue px-8 py-3 bg-surface crayon-button border-[4px] -rotate-1 shadow-md">
+                    <span class="material-symbols-outlined text-3xl spin-on-hover">sync</span>
+                    Refresh
+                </button>
+            </div>
+
+            <!-- List Header -->
+            <div class="flex w-full px-6 pb-4 border-b-[5px] text-[#4c1d95] font-bold text-xl uppercase tracking-wider"
+                style="border-color: rgba(124, 58, 237, 0.4); border-radius: 20px 15px 25px 18px / 18px 25px 15px 20px; filter: url(#crayon-texture);">
+                <div class="w-1/2">CONTENT</div>
+                <div class="w-1/6 text-center">STATUS</div>
+                <div class="w-1/4 text-center">PROGRESS</div>
+                <div class="w-[10%] text-center">ACTION</div>
+            </div>
+
+            <!-- Task List Body -->
+            <div id="queueBody" class="flex flex-col gap-5 mt-6 overflow-y-auto flex-1 table-container pr-4">
+                <div class="text-center py-32 text-headline-md text-[#94a3b8] font-bold opacity-60">No speech tasks
+                    found yet...</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <!-- Result & API Modal -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-sketch-bg"></div>
+
+            <!-- Decorations -->
+            <span
+                class="material-symbols-outlined modal-decoration text-6xl text-crayon-yellow top-4 left-4 -rotate-12">star</span>
+            <span
+                class="material-symbols-outlined modal-decoration text-8xl text-crayon-blue top-12 right-20 opacity-20">cloud</span>
+            <span
+                class="material-symbols-outlined modal-decoration text-4xl text-crayon-orange bottom-10 left-10 rotate-45">star</span>
+            <span
+                class="material-symbols-outlined modal-decoration text-7xl text-crayon-purple bottom-4 right-4 -rotate-6 opacity-40">cloud</span>
+
+            <div class="modal-header">
+                <div class="flex items-center gap-6">
+                    <span id="modalTitle" class="text-headline-lg text-[#1e1b4b]">Result</span>
+                    <button id="copyBtn" onclick="copyResult()" class="copy-btn">📋 Copy</button>
+                    <a id="downloadBtn" href="#" download class="copy-btn bg-crayon-blue shadow-blue-800">⬇️ Download
+                        Audio</a>
+                </div>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="audioContainer" class="mb-6 hidden">
+                    <audio id="audioPlayer" controls></audio>
+                </div>
+                <pre id="resultText"></pre>
             </div>
         </div>
     </div>
 
-    <button class="refresh-btn" id="refreshBtn" title="Refresh">🔄</button>
+    <!-- Status Modal -->
+    <div id="statusModal" class="modal">
+        <div class="modal-content status-modal-content">
+            <div id="statusBg" class="status-modal-bg"></div>
 
-    <!-- Loader -->
-    <div class="loader-overlay" id="loader" style="display: none;">
-        <div>
-            <div class="loader"></div>
-            <div class="loader-text">Queuing...</div>
+            <span
+                class="material-symbols-outlined modal-decoration text-4xl text-crayon-yellow top-6 right-6 rotate-12">star</span>
+            <span
+                class="material-symbols-outlined modal-decoration text-6xl text-crayon-blue top-10 left-4 opacity-30">cloud</span>
+            <span
+                class="material-symbols-outlined modal-decoration text-3xl text-crayon-orange bottom-8 right-10 -rotate-12">star</span>
+            <span
+                class="material-symbols-outlined modal-decoration text-5xl text-crayon-purple bottom-10 left-8 rotate-6 opacity-30">cloud</span>
+
+            <div id="statusIconContainer" class="status-icon-container text-crayon-blue">
+                <div class="status-icon-bg"></div>
+                <span id="statusIcon" class="material-symbols-outlined text-6xl animate-bounce">upload</span>
+            </div>
+            <h2 id="statusMessage" class="text-headline-lg text-crayon-blue mb-2">Processing...</h2>
+            <p id="statusSubMessage" class="text-body-lg text-[#4b5563]">Creating your audio task, please wait.</p>
         </div>
     </div>
 
+    <!-- Application Logic -->
     <script>
-        const API_URL = '/api';
+        // --- Configuration ---
+        const API_BASE = '/api';
 
-        // Elements
-        const textInput = document.getElementById('textInput');
-        const voiceSelect = document.getElementById('voiceSelect');
-        const speedInput = document.getElementById('speedInput');
-        const generateBtn = document.getElementById('generateBtn');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const fileInput = document.getElementById('fileInput');
-        const loader = document.getElementById('loader');
-        const refreshBtn = document.getElementById('refreshBtn');
+        // --- DOM Elements ---
+        const UI = {
+            generateBtn: document.getElementById('generateBtn'),
+            uploadZone: document.getElementById('uploadZone'),
+            fileInput: document.getElementById('fileInput'),
+            textInput: document.getElementById('textInput'),
+            voiceSelect: document.getElementById('voiceSelect'),
+            voiceDropdown: document.getElementById('voiceDropdown'),
+            voiceTrigger: document.getElementById('voiceTrigger'),
+            voicePopup: document.getElementById('voicePopup'),
+            selectedVoice: document.getElementById('selectedVoice'),
+            speedInput: document.getElementById('speedInput'),
+            queueBody: document.getElementById('queueBody'),
+            resultModal: document.getElementById('resultModal'),
+            statusModal: document.getElementById('statusModal'),
+            resultText: document.getElementById('resultText'),
+            modalTitle: document.getElementById('modalTitle'),
+            copyBtn: document.getElementById('copyBtn'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            audioContainer: document.getElementById('audioContainer'),
+            audioPlayer: document.getElementById('audioPlayer'),
+            statusMessage: document.getElementById('statusMessage'),
+            statusSubMessage: document.getElementById('statusSubMessage'),
+            statusIcon: document.getElementById('statusIcon'),
+            statusIconContainer: document.getElementById('statusIconContainer'),
+            statusBg: document.getElementById('statusBg'),
+            healthDot: document.getElementById('healthDot'),
+            healthText: document.getElementById('healthText'),
+            apiDocBtn: document.getElementById('apiDocBtn')
+        };
 
-        // Generate button
-        generateBtn.addEventListener('click', async () => {
-            const text = textInput.value.trim();
-            if (!text) {
-                showNotification('Please enter some text!', 'error');
+        // --- Custom Dropdown Logic ---
+        UI.voiceTrigger.onclick = (e) => {
+            e.stopPropagation();
+            UI.voicePopup.classList.toggle('active');
+        };
+
+        document.querySelectorAll('.dropdown-option').forEach(option => {
+            option.onclick = (e) => {
+                const value = option.getAttribute('data-value');
+                const text = option.innerText;
+
+                UI.voiceSelect.value = value;
+                UI.selectedVoice.innerText = text;
+
+                document.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+
+                UI.voicePopup.classList.remove('active');
+            };
+        });
+
+        window.onclick = () => {
+            UI.voicePopup.classList.remove('active');
+        };
+
+        // --- UI Helpers ---
+        function updateStatusModal(type, msg, subMsg) {
+            UI.statusMessage.innerText = msg;
+            UI.statusSubMessage.innerText = subMsg || "Processing your request, please wait.";
+            UI.statusIconContainer.className = "status-icon-container";
+            UI.statusIcon.className = "material-symbols-outlined text-6xl";
+            UI.statusBg.style.borderColor = "";
+
+            if (type === 'working') {
+                UI.statusIconContainer.classList.add('text-crayon-blue');
+                UI.statusIcon.innerText = "settings";
+                UI.statusIcon.classList.add('animate-spin');
+                UI.statusBg.style.borderColor = "#2563eb";
+            } else if (type === 'success') {
+                UI.statusIconContainer.classList.add('text-crayon-green');
+                UI.statusIcon.innerText = "check_circle";
+                UI.statusBg.style.borderColor = "#16a34a";
+            } else if (type === 'error') {
+                UI.statusIconContainer.classList.add('text-crayon-red');
+                UI.statusIcon.innerText = "error";
+                UI.statusBg.style.borderColor = "#dc2626";
+            }
+        }
+
+        function closeModal() {
+            UI.resultModal.classList.remove('active');
+            UI.audioPlayer.pause();
+        }
+
+        function copyResult() {
+            const text = UI.resultText.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = UI.copyBtn.innerText;
+                UI.copyBtn.innerText = '✓ Copied!';
+                setTimeout(() => { UI.copyBtn.innerText = orig; }, 2000);
+            });
+        }
+
+        // --- API Functions ---
+        async function loadTasks() {
+            try {
+                const res = await fetch(`${API_BASE}/tasks`);
+                const data = await res.json();
+                renderQueue(data);
+            } catch (err) {
+                console.error("Load tasks error:", err);
+            }
+        }
+
+        async function handleGenerate() {
+            const text = UI.textInput.value.trim();
+            if (!text) return;
+
+            UI.statusModal.classList.add('active');
+            updateStatusModal('working', "Queuing...", "Sending text to server...");
+
+            const formData = new FormData();
+            formData.append('text', text);
+            formData.append('voice', UI.voiceSelect.value);
+            formData.append('speed', UI.speedInput.value);
+
+            try {
+                const res = await fetch(`${API_BASE}/tasks/upload`, { method: 'POST', body: formData });
+                if (res.ok) {
+                    updateStatusModal('success', "Queued! ✨", "Task created and starting soon.");
+                    UI.textInput.value = '';
+                    setTimeout(() => {
+                        UI.statusModal.classList.remove('active');
+                        loadTasks();
+                    }, 1200);
+                } else {
+                    updateStatusModal('error', "Failed ❌", "Could not create task.");
+                    setTimeout(() => UI.statusModal.classList.remove('active'), 2000);
+                }
+            } catch (err) {
+                console.error("Upload error:", err);
+                updateStatusModal('error', "Error ⚠️", "Could not reach server.");
+                setTimeout(() => UI.statusModal.classList.remove('active'), 2000);
+            }
+        }
+
+        async function handleFile(file) {
+            if (!file) return;
+
+            UI.statusModal.classList.add('active');
+            updateStatusModal('working', "Uploading...", "Reading text file...");
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('voice', UI.voiceSelect.value);
+            formData.append('speed', UI.speedInput.value);
+
+            try {
+                const res = await fetch(`${API_BASE}/tasks/upload`, { method: 'POST', body: formData });
+                if (res.ok) {
+                    updateStatusModal('success', "Uploaded! ✨", "Task created from file.");
+                    setTimeout(() => {
+                        UI.statusModal.classList.remove('active');
+                        loadTasks();
+                    }, 1200);
+                } else {
+                    updateStatusModal('error', "Failed ❌", "Invalid file or server error.");
+                    setTimeout(() => UI.statusModal.classList.remove('active'), 2000);
+                }
+            } catch (err) {
+                console.error("Upload error:", err);
+                updateStatusModal('error', "Error ⚠️", "Connection failed.");
+                setTimeout(() => UI.statusModal.classList.remove('active'), 2000);
+            }
+        }
+
+        async function showResult(id) {
+            try {
+                const res = await fetch(`${API_BASE}/tasks/${id}`);
+                const data = await res.json();
+
+                UI.modalTitle.innerText = "Speech Task Details";
+                UI.resultText.innerText = data.text || data.filename;
+
+                UI.copyBtn.classList.remove('hidden');
+
+                if (data.status === 'completed') {
+                    UI.audioContainer.classList.remove('hidden');
+                    UI.downloadBtn.classList.remove('hidden');
+                    UI.audioPlayer.src = `${API_BASE}/download/${id}`;
+                    UI.downloadBtn.href = `${API_BASE}/download/${id}`;
+                } else {
+                    UI.audioContainer.classList.add('hidden');
+                    UI.downloadBtn.classList.add('hidden');
+                }
+
+                UI.resultModal.classList.add('active');
+            } catch (err) {
+                console.error("Show result error:", err);
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const res = await fetch('/health');
+                const data = await res.json();
+                const healthy = data.status === 'healthy';
+
+                UI.healthDot.className = `w-4 h-4 rounded-full ${healthy ? 'bg-crayon-green' : 'bg-crayon-red'} shadow-md`;
+                UI.healthText.innerText = healthy ? 'Service Online' : 'Service Down';
+                UI.healthText.className = `text-headline-md font-bold ${healthy ? 'text-crayon-green' : 'text-crayon-red'}`;
+            } catch (e) {
+                UI.healthDot.className = 'w-4 h-4 rounded-full bg-crayon-red shadow-md';
+                UI.healthText.innerText = 'Connection Error';
+                UI.healthText.className = 'text-headline-md font-bold text-crayon-red';
+            }
+        }
+
+        // --- Renderers ---
+        function renderQueue(tasks) {
+            if (tasks.length === 0) {
+                UI.queueBody.innerHTML = '<div class="text-center py-32 text-headline-md text-[#94a3b8] font-bold opacity-60">No speech tasks found yet...</div>';
                 return;
             }
 
-            const voice = voiceSelect.value;
-            const speed = parseFloat(speedInput.value);
+            UI.queueBody.innerHTML = tasks.map((t, i) => {
+                const rotate = i % 2 === 0 ? 'rotate-[0.3deg]' : '-rotate-[0.3deg]';
+                const status = t.status.toLowerCase();
+                const colors = {
+                    completed: { text: 'crayon-green', bg: 'bg-[#f0fdf4]' },
+                    failed: { text: 'crayon-red', bg: 'bg-[#fef2f2]' },
+                    processing: { text: 'crayon-blue', bg: 'bg-[#eff6ff]' },
+                    pending: { text: 'crayon-purple', bg: 'bg-[#f5f3ff]' },
+                    not_started: { text: 'crayon-purple', bg: 'bg-[#f5f3ff]' }
+                };
+                const theme = colors[status] || colors.pending;
+                const snippet = t.filename || t.text || "Unnamed Task";
 
-            // Show loader
-            loader.style.display = 'flex';
-            generateBtn.disabled = true;
-
-            try {
-                const response = await fetch(`${API_URL}/generate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        text,
-                        voice,
-                        speed
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    showNotification('Task queued successfully! 🎉');
-                    textInput.value = '';
-                    loadFiles();
-                } else {
-                    showNotification(data.error || 'Generation failed', 'error');
-                }
-            } catch (error) {
-                showNotification('Network error: ' + error.message, 'error');
-            } finally {
-                // Hide loader
-                loader.style.display = 'none';
-                generateBtn.disabled = false;
-            }
-        });
-
-        // Upload button - opens file picker
-        uploadBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        // File input change - fill textarea with file content
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            // Read file content
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const text = event.target.result.trim();
-
-                if (!text) {
-                    showNotification('File is empty!', 'error');
-                    fileInput.value = '';
-                    return;
-                }
-
-                // Fill textarea with file content
-                textInput.value = text;
-                showNotification(`Loaded "${file.name}" - Ready to generate! 📄`);
-                fileInput.value = ''; // Reset for next upload
-            };
-
-            reader.onerror = () => {
-                showNotification('Error reading file!', 'error');
-                fileInput.value = '';
-            };
-
-            reader.readAsText(file);
-        });
-
-        // Load files
-        async function loadFiles() {
-            try {
-                const response = await fetch(`${API_URL}/files`);
-                const files = await response.json();
-
-                // Store files data for popup access
-                filesData = files;
-
-                const tbody = document.getElementById('filesTable');
-
-                if (files.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No tasks yet. Start by generating audio!</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = files.map((file, index) => {
-                    // Escape text for HTML attribute and display
-                    const escapedText = escapeHtml(file.text);
-                    const truncatedText = file.text.length > 50 ? file.text.substring(0, 50) + '...' : file.text;
-
-                    // Build status display with progress
-                    let statusDisplay = '';
-                    if (file.status === 'processing') {
-                        const progressPercent = file.progress || 0;
-                        const progressText = file.progress_text || 'Processing...';
-                        statusDisplay = `
-                            <div class="status-progress">
-                                <span class="status status-${file.status}">${progressPercent}%</span>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar" style="width: ${progressPercent}%"></div>
+                return `
+                    <div class="task-card flex items-center p-6 bg-surface hover:border-crayon-purple transition-colors shadow-sm ${rotate}">
+                        <div class="flex items-center gap-5 w-1/2">
+                            <div class="w-14 h-16 border-[3px] border-crayon-blue rounded-xl p-2 bg-surface flex shadow-sm organic-shape rotate-[-3deg] shrink-0">
+                                <div class="w-full h-full flex flex-col gap-1.5 p-0.5">
+                                    <div class="w-full h-1 bg-[#adc6ff] rounded-sm"></div>
+                                    <div class="w-full h-1 bg-[#adc6ff] rounded-sm"></div>
+                                    <div class="w-2/3 h-1 bg-[#adc6ff] rounded-sm"></div>
                                 </div>
-                                <span class="progress-text">${escapeHtml(progressText)}</span>
                             </div>
-                        `;
-                    } else {
-                        statusDisplay = `<span class="status status-${file.status}">${file.status.replace('_', ' ')}</span>`;
-                    }
-
-                    return `
-                    <tr>
-                        <td>
-                            <div class="text-cell-wrapper">
-                                <span class="text-preview" title="${escapedText}">${escapeHtml(truncatedText)}</span>
-                                <button class="btn btn-small btn-view-text" onclick="showTextPopup(${index})">👁️ View</button>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-headline-md text-[#1A1A1A] leading-tight font-bold mb-1 truncate">${snippet}</span>
+                                <div class="text-label-sm text-[#94a3b8] font-bold">${t.id.substring(0, 12)}</div>
                             </div>
-                        </td>
-                        <td>${statusDisplay}</td>
-                        <td>
-                            ${file.status === 'completed' && file.output_file ?
-                            `<a href="${API_URL}/download/${file.id}" class="btn btn-small btn-secondary" target="_blank">⬇️</a>`
-                            : '—'}
-                        </td>
-                        <td>${new Date(file.created_at).toLocaleString()}</td>
-                        <td>${file.processed_at ? new Date(file.processed_at).toLocaleString() : '—'}</td>
-                    </tr>
+                        </div>
+                        <div class="w-1/6 flex justify-center">
+                            <div class="px-4 py-2 ${theme.bg} border-[3px] border-${theme.text} text-${theme.text} font-bold rounded-2xl uppercase tracking-tight crayon-filter text-sm">
+                                ${status.replace('_', ' ')}
+                            </div>
+                        </div>
+                        <div class="w-1/4 flex items-center justify-center gap-4">
+                            <div class="flex-1 h-5 border-[3px] border-[#adc6ff] rounded-full overflow-hidden bg-surface p-[1px] crayon-filter">
+                                <div class="h-full rounded-full progress-fill shadow-sm" style="width:${t.progress}%"></div>
+                            </div>
+                            <span class="text-headline-md text-xl text-[#1A1A1A] font-bold w-12 text-right">${status === 'completed' ? '' : t.progress + '%'}</span>
+                        </div>
+                        <div class="w-[10%] flex justify-center">
+                            <button onclick="showResult('${t.id}')" class="flex items-center gap-2 px-4 py-2 bg-white border-[3px] border-crayon-blue text-crayon-blue font-bold rounded-2xl hover:bg-crayon-blue hover:text-white transition-all shadow-sm crayon-filter text-sm">
+                                <span class="material-symbols-outlined text-xl">${status === 'completed' ? 'play_arrow' : 'visibility'}</span>
+                                ${status === 'completed' ? 'PLAY' : 'VIEW'}
+                            </button>
+                        </div>
+                    </div>
                 `;
-                }).join('');
-            } catch (error) {
-                console.error('Error loading files:', error);
-            }
+            }).join('');
         }
 
-        // Refresh button
-        refreshBtn.addEventListener('click', () => {
-            loadFiles();
-            const icon = refreshBtn.textContent;
-            refreshBtn.textContent = '⏳';
-            setTimeout(() => refreshBtn.textContent = icon, 500);
-        });
-
-        // Auto-refresh every 10 minutes
-        setInterval(loadFiles, 1000 * 60 * 10);
-
-        // Initial load
-        loadFiles();
-
-        // Notification system
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            if (type === 'error') {
-                notification.style.background = 'var(--error)';
-                notification.style.borderColor = 'var(--error)';
-            }
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.remove();
-            }, 4000);
-        }
-
-        // Store files data for popup access
-        let filesData = [];
-
-        // Escape HTML to prevent XSS
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Show text popup
-        function showTextPopup(index) {
-            const file = filesData[index];
-            if (!file) return;
-
-            // Create modal overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'text-modal-overlay';
-            overlay.onclick = (e) => {
-                if (e.target === overlay) overlay.remove();
+        // --- Event Listeners ---
+        UI.generateBtn.onclick = handleGenerate;
+        UI.uploadZone.onclick = () => UI.fileInput.click();
+        UI.uploadZone.ondragover = (e) => { e.preventDefault(); UI.uploadZone.classList.add('dragging'); };
+        UI.uploadZone.ondragleave = () => UI.uploadZone.classList.remove('dragging');
+        UI.uploadZone.ondrop = (e) => {
+            e.preventDefault();
+            UI.uploadZone.classList.remove('dragging');
+            handleFile(e.dataTransfer.files[0]);
+        };
+        UI.fileInput.onchange = (e) => handleFile(e.target.files[0]);
+        UI.apiDocBtn.onclick = () => {
+            const doc = {
+                base_url: window.location.origin,
+                endpoints: [
+                    { method: "POST", path: "/api/tasks/upload", desc: "Create TTS task", params: { text: "string", voice: "1-14", speed: "0.5-2.0" } },
+                    { method: "POST", path: "/api/tasks/upload", desc: "Create TTS task via file", params: { file: "UploadFile", voice: "1-14", speed: "0.5-2.0" } },
+                    { method: "GET", path: "/api/tasks", desc: "List all tasks" },
+                    { method: "GET", path: "/api/tasks/{task_id}", desc: "Get task details" },
+                    { method: "GET", path: "/api/download/{task_id}", desc: "Download audio file" },
+                    { method: "GET", path: "/health", desc: "Service health" }
+                ],
+                example_usage: `curl -X POST -F 'text=Hello world' -F 'voice=4' ${window.location.origin}/api/tasks/upload`
             };
+            UI.resultText.innerText = JSON.stringify(doc, null, 2);
+            UI.modalTitle.innerText = "API Documentation";
+            UI.audioContainer.classList.add('hidden');
+            UI.downloadBtn.classList.add('hidden');
+            UI.copyBtn.classList.remove('hidden');
+            UI.resultModal.classList.add('active');
+        };
 
-            // Create modal content
-            overlay.innerHTML = `
-                <div class="text-modal">
-                    <div class="text-modal-header">
-                        <h3>📝 Full Text</h3>
-                        <button class="text-modal-close" onclick="this.closest('.text-modal-overlay').remove()">✕</button>
-                    </div>
-                    <div class="text-modal-content">
-                        <pre>${escapeHtml(file.text)}</pre>
-                    </div>
-                    <div class="text-modal-footer">
-                        <button class="btn btn-small btn-secondary" onclick="copyTextToClipboard(${index})">📋 Copy Text</button>
-                        <button class="btn btn-small" onclick="this.closest('.text-modal-overlay').remove()">Close</button>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(overlay);
-
-            // Close on Escape key
-            const handleEscape = (e) => {
-                if (e.key === 'Escape') {
-                    overlay.remove();
-                    document.removeEventListener('keydown', handleEscape);
-                }
-            };
-            document.addEventListener('keydown', handleEscape);
-        }
-
-        // Copy text to clipboard
-        function copyTextToClipboard(index) {
-            const file = filesData[index];
-            if (!file) return;
-
-            navigator.clipboard.writeText(file.text).then(() => {
-                showNotification('Text copied to clipboard! 📋');
-            }).catch((err) => {
-                console.error('Failed to copy:', err);
-                showNotification('Failed to copy text', 'error');
-            });
-        }
+        // --- Lifecycle ---
+        loadTasks();
+        setInterval(loadTasks, 5000);
+        setInterval(checkHealth, 10000);
     </script>
 </body>
 

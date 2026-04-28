@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+aiosqlite
+aiofiles
+python-multipart
+custom_logger @ git+https://github.com/jebin2/custom_logger.git
+tts-runner[chatterbox] @ git+https://github.com/jebin2/TTS.git

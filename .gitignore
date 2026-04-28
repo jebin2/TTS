@@ -13,3 +13,5 @@ outputs/
 pkg/
 src/
 build/
+temp_dir/
+uploads/
