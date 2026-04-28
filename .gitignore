@@ -15,3 +15,9 @@ src/
 build/
 temp_dir/
 uploads/
+*.db
+*.wav
+*.mp3
+*.flac
+*.pth
+*.bin

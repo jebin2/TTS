@@ -78,13 +78,29 @@ async def worker_loop():
                         if line_str:
                             logger.info(f"[TTS] {line_str}")
                             
-                            # Parse "Sentence X processed" lines
-                            match = re.search(r'Sentence\s+(\d+)\s+processed', line_str)
+                            # Parse "Processing X text sentences"
+                            total_match = re.search(r'Processing\s+(\d+)\s+text\s+sentences', line_str)
+                            if total_match:
+                                total_sentences = int(total_match.group(1))
+
+                            # Parse "Sentence X processed" lines (handles both "X" and "X/Y" formats)
+                            match = re.search(r'Sentence\s+(\d+)(?:/(\d+))?\s+processed', line_str)
                             if match:
                                 current_sentence = int(match.group(1))
+                                if match.group(2):
+                                    total_sentences = int(match.group(2))
+                                
                                 if total_sentences > 0:
-                                    progress = int((current_sentence / total_sentences) * 90)
-                                    await crud.update_progress(task_id, max(progress, 10), f"Processing sentence {current_sentence}/{total_sentences}")
+                                    # Progress scales from 10% (model loaded) to 90% (start of combining)
+                                    progress = 10 + int((current_sentence / total_sentences) * 80)
+                                    await crud.update_progress(task_id, min(progress, 90), f"Processing sentence {current_sentence}/{total_sentences}")
+                            
+                            # Parse "Sampling: X%" for granular progress
+                            sampling_match = re.search(r'Sampling:\s+(\d+)%', line_str)
+                            if sampling_match and total_sentences > 0:
+                                sampling_pct = int(sampling_match.group(1))
+                                progress = 10 + int((current_sentence / total_sentences) * 80) + int((sampling_pct / 100) * (1 / total_sentences) * 80)
+                                await crud.update_progress(task_id, min(progress, 89), f"Synthesizing sentence {current_sentence + 1}/{total_sentences} ({sampling_pct}%)")
                             
                             # Parse "Combining X audio files"
                             combine_match = re.search(r'Combining\s+(\d+)\s+audio\s+files', line_str)
