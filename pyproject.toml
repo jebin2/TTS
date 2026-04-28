@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tts-runner"
+version = "1.0.0"
+authors = [
+    {name = "Jebin Einstein", email = "jebineinstein@gmail.com"}
+]
+description = "A flexible, multi-engine Text-to-Speech runner with TUI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "numpy",
+    "torch",
+    "pydub",
+    "sounddevice",
+    "python-dotenv",
+    "scipy",
+]
+
+[tool.setuptools.packages.find]
+include = ["tts_runner*"]
+exclude = ["hf_backend*"]
+
+[tool.setuptools.package-data]
+"tts_runner.voices" = ["*"]
+
+[project.optional-dependencies]
+chatterbox = [
+    "chatterbox-tts",
+    "spacy",
+    "peft",
+]
+kitten = [
+    "kittentts",
+    "spacy",
+]
+kokoro = [
+    "kokoro>=0.9.4",
+    "soundfile",
+]
+all = [
+    "chatterbox-tts",
+    "spacy",
+    "peft",
+    "kittentts",
+    "kokoro>=0.9.4",
+    "soundfile",
+]
+
+[project.scripts]
+tts-runner = "tts_runner.runner:main"
+tts-tui = "tts_runner.tui:main"
+
+[project.urls]
+Homepage = "https://github.com/jebin2/TTS"

@@ -1,2 +1,0 @@
-recursive-include tts_runner/voices *
-include README.md
