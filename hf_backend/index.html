@@ -617,7 +617,7 @@
                     <button id="generateBtn"
                         class="crayon-button bg-crayon-blue text-white py-3 text-headline-md mt-2 flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-3xl">rocket_launch</span>
-                        GENERATE
+                        SUBMIT TASK
                     </button>
 
                     <div class="text-center py-2">
@@ -956,7 +956,7 @@
         // --- Renderers ---
         function renderQueue(tasks) {
             if (tasks.length === 0) {
-                UI.queueBody.innerHTML = '<div class="text-center py-32 text-headline-md text-[#94a3b8] font-bold opacity-60">No speech tasks found yet...</div>';
+                UI.queueBody.innerHTML = '<div class="text-center py-32 text-headline-md text-[#94a3b8] font-bold opacity-60">No tasks found yet...</div>';
                 return;
             }
 
