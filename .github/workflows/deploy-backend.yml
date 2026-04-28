@@ -51,7 +51,6 @@ jobs:
           
           # Copy TTS runner code
           cp -r tts_runner hf-space/
-          cp setup.py hf-space/
           
           # Ensure Dockerfile exists
           if [ ! -f hf-space/Dockerfile ]; then
